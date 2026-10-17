@@ -1,0 +1,102 @@
+import 'package:dio/dio.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:startup_mobile/cor/reseau/dio_provider.dart';
+import 'package:startup_mobile/cor/storage/token_storage.dart';
+import 'package:startup_mobile/models/InvestorRegisterDto.dart';
+import 'package:startup_mobile/models/LoginResponse.dart';
+
+part 'auth_repository.g.dart';
+
+class AuthRepository {
+  final Dio _dio;
+  final TokenStorage _tokenStorage;
+
+  AuthRepository(this._dio, this._tokenStorage);
+
+  /// Connexion de l'investisseur
+  Future<LoginResponse> login(
+    String email,
+    String password,
+  ) async {
+    try {
+      final response = await _dio.post(
+        '/api/user/login',
+        data: {
+          'email': email.trim().toLowerCase(),
+          'password': password,
+        },
+      );
+
+      final loginResponse = LoginResponse.fromJson(
+        response.data,
+      );
+
+      // Enregistrer le JWT après une connexion réussie.
+      await _tokenStorage.saveToken(loginResponse.token);
+
+      return loginResponse;
+    } on DioException catch (e) {
+      throw Exception(_getErrorMessage(e));
+    }
+  }
+
+  /// Inscription d'un nouvel investisseur
+  Future<void> register(InvestorRegisterDto dto) async {
+    try {
+      await _dio.post(
+        '/investisseur/register',
+        data: dto.toJson(),
+      );
+    } on DioException catch (e) {
+      throw Exception(_getErrorMessage(e));
+    }
+  }
+
+  /// Déconnexion locale
+  Future<void> logout() async {
+    await _tokenStorage.deleteToken();
+  }
+
+  /// Extraction du message d'erreur renvoyé par Spring Boot
+  String _getErrorMessage(DioException e) {
+    final data = e.response?.data;
+
+    if (data is Map) {
+      final message = data['message'];
+
+      if (message is String && message.isNotEmpty) {
+        return message;
+      }
+    }
+
+    if (e.response == null) {
+      return 'Impossible de joindre le serveur. Vérifiez votre connexion.';
+    }
+
+    switch (e.response?.statusCode) {
+      case 400:
+        return 'Les données envoyées sont invalides.';
+      case 401:
+        return 'Email ou mot de passe incorrect.';
+      case 403:
+        return 'Vous n’avez pas l’autorisation d’effectuer cette action.';
+      case 404:
+        return 'Le service demandé est introuvable.';
+      case 409:
+        return 'Un compte existe déjà avec ces informations.';
+      case 500:
+        return 'Une erreur interne est survenue sur le serveur.';
+      default:
+        return 'Une erreur est survenue lors de la communication avec le serveur.';
+    }
+  }
+}
+
+/// Repository accessible via Riverpod
+@riverpod
+AuthRepository authRepository(Ref ref) {
+  final dio = ref.watch(dioProvider);
+  final tokenStorage = ref.watch(tokenStorageProvider);
+
+  return AuthRepository(dio, tokenStorage);
+}
