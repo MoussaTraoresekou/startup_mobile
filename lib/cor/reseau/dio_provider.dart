@@ -1,4 +1,3 @@
-
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:startup_mobile/cor/config/ApiConfig.dart';
@@ -33,17 +32,13 @@ final dioProvider = Provider<Dio>((ref) {
           if (token != null && token.isNotEmpty) {
             options.headers['Authorization'] = 'Bearer $token';
           }
-
-          handler.next(options);
-        } catch (error) {
-          handler.reject(
-            DioException(
-              requestOptions: options,
-              error: error,
-              message: 'Impossible de lire le token sécurisé.',
-            ),
-          );
+        } catch (_) {
+          // Token illisible (ex. stockage sécurisé indisponible sur le web) :
+          // on envoie quand même la requête sans token. Les routes publiques
+          // (login, inscription) n'en ont pas besoin, et le serveur répondra
+          // 401 pour les routes protégées.
         }
+        handler.next(options);
       },
     ),
   );

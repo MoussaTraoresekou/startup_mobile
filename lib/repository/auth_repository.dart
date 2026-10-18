@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:startup_mobile/cor/reseau/dio_provider.dart';
 import 'package:startup_mobile/cor/storage/token_storage.dart';
@@ -14,10 +15,7 @@ class AuthRepository {
   AuthRepository(this._dio, this._tokenStorage);
 
   /// Connexion de l'investisseur
-  Future<LoginResponse> login(
-    String email,
-    String password,
-  ) async {
+  Future<LoginResponse> login(String email, String password) async {
     try {
       final response = await _dio.post(
         '/api/user/login',
@@ -27,9 +25,7 @@ class AuthRepository {
         },
       );
 
-      final loginResponse = LoginResponse.fromJson(
-        response.data,
-      );
+      final loginResponse = LoginResponse.fromJson(response.data);
 
       // Enregistrer le JWT après une connexion réussie.
       await _tokenStorage.saveToken(loginResponse.token);
@@ -44,7 +40,7 @@ class AuthRepository {
   Future<void> register(InvestorRegisterDto dto) async {
     try {
       await _dio.post(
-        '/investisseur/register',
+        '/api/investisseur/register', // le préfixe /api était manquant
         data: dto.toJson(),
       );
     } on DioException catch (e) {
@@ -59,6 +55,12 @@ class AuthRepository {
 
   /// Extraction du message d'erreur renvoyé par Spring Boot
   String _getErrorMessage(DioException e) {
+    // Journal de diagnostic : visible dans la console de Flutter.
+    debugPrint(
+      'Dio: type=${e.type} | statut=${e.response?.statusCode} | '
+      'message=${e.message} | url=${e.requestOptions.uri}',
+    );
+
     final data = e.response?.data;
 
     if (data is Map) {
