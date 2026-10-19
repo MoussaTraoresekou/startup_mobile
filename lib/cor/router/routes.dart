@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:startup_mobile/models/ProjetModel%20.dart';
 import 'package:startup_mobile/pages/Investisseur/investisseurAcceuil.dart';
+import 'package:startup_mobile/pages/Investisseur/investor_project_detail_screen.dart';
 import 'package:startup_mobile/pages/Login/loginscreen.dart';
 import 'package:startup_mobile/pages/register/registerScreen.dart';
 import 'package:startup_mobile/pages/secteur/secteurPourInv.dart';
@@ -16,7 +18,7 @@ enum AppRoutes {
   login,
   register,
   sectorsSelection,
-  investorDashboard,
+  investorDashboard, projetDetail,
 }
 
 const Set<String> _publicRoutes = {'/splash', '/login', '/register'};
@@ -94,6 +96,15 @@ GoRouter appRouter(Ref ref) {
         path: '/investor-dashboard',
         name: AppRoutes.investorDashboard.name,
         builder: (context, state) => const InvestorDashboardScreen(),
+      ),
+      GoRoute(
+        name: AppRoutes.projetDetail.name,
+        path: '/detailactive',
+        builder: (context, state) {
+           final projet = state.extra as ProjetModel;
+
+          return InvestorProjectDetailScreen(projet: projet);
+        },
       ),
     ],
   );

@@ -208,15 +208,6 @@ class _SectorsSelectionScreenState extends ConsumerState<secteurPourInv>
                 letterSpacing: -0.3,
               ),
             ),
-            const SizedBox(height: 6),
-            Text(
-              'Choisissez-en un ou plusieurs. Vous pourrez modifier ce choix plus tard.',
-              style: context.normalTextStyle.copyWith(
-                fontSize: 14,
-                height: 1.45,
-                color: context.textMuted,
-              ),
-            ),
             const SizedBox(height: 22),
             sectorsAsync.when(
               loading: () => const Padding(
