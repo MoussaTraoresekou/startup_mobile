@@ -4,10 +4,6 @@ import 'package:startup_mobile/cor/config/ApiConfig.dart';
 
 import '../storage/token_storage.dart';
 
-final tokenStorageProvider = Provider<TokenStorage>((ref) {
-  return const TokenStorage();
-});
-
 final dioProvider = Provider<Dio>((ref) {
   final tokenStorage = ref.watch(tokenStorageProvider);
 

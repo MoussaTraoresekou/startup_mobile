@@ -5,11 +5,17 @@ import '../../models/LoginResponse.dart';
 
 part 'auth_controller.g.dart';
 
-@riverpod
+// keepAlive : le contrôleur n'est pas détruit si l'utilisateur quitte l'écran
+// pendant une requête (évite une erreur en écrivant l'état après coup).
+@Riverpod(keepAlive: true)
 class AuthController extends _$AuthController {
   @override
-  FutureOr<void> build() async {
-    return null;
+  FutureOr<void> build() {}
+
+  /// Cette application est réservée aux investisseurs.
+  /// Accepte « INVESTISSEUR » comme « ROLE_INVESTISSEUR ».
+  bool _isInvestor(LoginResponse response) {
+    return '${response.role}'.toUpperCase().contains('INVESTISSEUR');
   }
 
   /// Connexion de l'investisseur auprès du serveur Spring Boot
@@ -17,6 +23,8 @@ class AuthController extends _$AuthController {
     required String email,
     required String password,
   }) async {
+    if (state.isLoading) return null;
+
     if (email.trim().isEmpty || password.trim().isEmpty) {
       state = AsyncError(
         'Veuillez remplir tous les champs !',
@@ -27,26 +35,28 @@ class AuthController extends _$AuthController {
 
     state = const AsyncLoading();
 
-    final result = await AsyncValue.guard(
-      () => ref.read(authRepositoryProvider).login(
-            email.trim(),
-            password,
-          ),
-    );
+    final repository = ref.read(authRepositoryProvider);
+
+    final result = await AsyncValue.guard<LoginResponse>(() async {
+      final response = await repository.login(email.trim(), password);
+
+      // Un porteur ou un mentor ne doit pas entrer dans l'app investisseur :
+      // on supprime le token qui vient d'être enregistré et on refuse.
+      if (!_isInvestor(response)) {
+        await repository.logout();
+        throw Exception('Cette application est réservée aux investisseurs.');
+      }
+
+      return response;
+    });
 
     state = result;
 
-    if (!state.hasError && result.value != null) {
-      final loginResponse = result.value!;
-      print("Authentifié avec succès : ${loginResponse.prenom} ${loginResponse.nom}");
-      print("Rôle système détecté : ${loginResponse.role}");
-      return loginResponse;
-    }
-
-    return null;
+    return result.hasError ? null : result.value;
   }
 
-  /// Inscription d'un nouvel investisseur (Vérifications locales avant envoi MySQL)
+  /// Inscription d'un nouvel investisseur (vérifications locales avant
+  /// l'envoi au serveur)
   Future<bool> inscrirIvestisseur({
     required String nom,
     required String prenom,
@@ -55,6 +65,8 @@ class AuthController extends _$AuthController {
     required String password,
     required String typeInvestisseurCode,
   }) async {
+    if (state.isLoading) return false;
+
     if (nom.trim().isEmpty ||
         prenom.trim().isEmpty ||
         email.trim().isEmpty ||
@@ -81,7 +93,9 @@ class AuthController extends _$AuthController {
     final dto = InvestorRegisterDto(
       nom: nom.trim(),
       prenom: prenom.trim(),
-      email: email.trim(),
+      // En minuscules, comme au login, pour éviter un compte introuvable
+      // à cause de la casse.
+      email: email.trim().toLowerCase(),
       telephone: telephone.trim(),
       password: password,
       typeInvestisseurCode: typeInvestisseurCode,

@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-
 import 'package:startup_mobile/cor/theme/app_theme.dart';
 import 'package:startup_mobile/cor/utils/size_config.dart';
+
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -45,7 +44,6 @@ class _SplashScreenState extends State<SplashScreen>
       duration: _minSplashDuration,
     );
 
-    // 1. Apparition progressive du logo
     _logoFadeAnimation = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(
         parent: _controller,
@@ -53,7 +51,6 @@ class _SplashScreenState extends State<SplashScreen>
       ),
     );
 
-    // Zoom discret du logo
     _logoScaleAnimation = Tween<double>(begin: 0.82, end: 1).animate(
       CurvedAnimation(
         parent: _controller,
@@ -61,7 +58,6 @@ class _SplashScreenState extends State<SplashScreen>
       ),
     );
 
-    // Déplacement vertical doux du logo
     _logoSlideAnimation = Tween<Offset>(
       begin: const Offset(0, -0.20),
       end: Offset.zero,
@@ -72,7 +68,6 @@ class _SplashScreenState extends State<SplashScreen>
       ),
     );
 
-    // 2. Apparition du titre
     _titleFadeAnimation = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(
         parent: _controller,
@@ -90,7 +85,6 @@ class _SplashScreenState extends State<SplashScreen>
       ),
     );
 
-    // 3. Apparition du slogan
     _subtitleFadeAnimation = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(
         parent: _controller,
@@ -108,7 +102,6 @@ class _SplashScreenState extends State<SplashScreen>
       ),
     );
 
-    // 4. Apparition douce du loader en fin d'animation
     _loaderFadeAnimation = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(
         parent: _controller,
@@ -123,12 +116,10 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Précharge le logo pour éviter tout flash à l'affichage
     precacheImage(const AssetImage(_logoAsset), context);
   }
 
   Future<void> _initializeApp() async {
-    // Lance en parallèle la durée minimale et la vérification de route
     final Future<void> minTimer = Future<void>.delayed(_minSplashDuration);
     final Future<String> routeFuture = _getInitialRoute();
 
@@ -141,14 +132,6 @@ class _SplashScreenState extends State<SplashScreen>
 
   Future<String> _getInitialRoute() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final bool hasSeenOnboarding =
-          prefs.getBool('hasSeenOnboarding') ?? false;
-
-      if (!hasSeenOnboarding) {
-        return '/onboarding';
-      }
-
       final String? token = await _secureStorage.read(key: 'jwt_token');
 
       if (token != null && token.trim().isNotEmpty) {
@@ -177,7 +160,6 @@ class _SplashScreenState extends State<SplashScreen>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Logo animé
                 FadeTransition(
                   opacity: _logoFadeAnimation,
                   child: SlideTransition(
@@ -194,10 +176,7 @@ class _SplashScreenState extends State<SplashScreen>
                     ),
                   ),
                 ),
-
                 SizedBox(height: 24.h(context)),
-
-                // Nom de l'application
                 FadeTransition(
                   opacity: _titleFadeAnimation,
                   child: SlideTransition(
@@ -214,10 +193,7 @@ class _SplashScreenState extends State<SplashScreen>
                     ),
                   ),
                 ),
-
                 SizedBox(height: 12.h(context)),
-
-                // Slogan
                 FadeTransition(
                   opacity: _subtitleFadeAnimation,
                   child: SlideTransition(
@@ -235,10 +211,7 @@ class _SplashScreenState extends State<SplashScreen>
                     ),
                   ),
                 ),
-
                 SizedBox(height: 40.h(context)),
-
-                // Indicateur de chargement avec fondu d'apparition
                 FadeTransition(
                   opacity: _loaderFadeAnimation,
                   child: SizedBox(

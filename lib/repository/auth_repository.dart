@@ -2,7 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:startup_mobile/cor/reseau/dio_provider.dart';
-import 'package:startup_mobile/cor/storage/token_storage.dart';
+import 'package:startup_mobile/cor/storage/token_storage.dart'; 
 import 'package:startup_mobile/models/InvestorRegisterDto.dart';
 import 'package:startup_mobile/models/LoginResponse.dart';
 
@@ -14,7 +14,6 @@ class AuthRepository {
 
   AuthRepository(this._dio, this._tokenStorage);
 
-  /// Connexion de l'investisseur
   Future<LoginResponse> login(String email, String password) async {
     try {
       final response = await _dio.post(
@@ -27,8 +26,8 @@ class AuthRepository {
 
       final loginResponse = LoginResponse.fromJson(response.data);
 
-      // Enregistrer le JWT après une connexion réussie.
       await _tokenStorage.saveToken(loginResponse.token);
+      await _tokenStorage.saveProfileStatus(loginResponse.profileCompleted);
 
       return loginResponse;
     } on DioException catch (e) {
@@ -36,11 +35,10 @@ class AuthRepository {
     }
   }
 
-  /// Inscription d'un nouvel investisseur
   Future<void> register(InvestorRegisterDto dto) async {
     try {
       await _dio.post(
-        '/api/investisseur/register', // le préfixe /api était manquant
+        '/api/investisseur/register',
         data: dto.toJson(),
       );
     } on DioException catch (e) {
@@ -48,14 +46,11 @@ class AuthRepository {
     }
   }
 
-  /// Déconnexion locale
   Future<void> logout() async {
     await _tokenStorage.deleteToken();
   }
 
-  /// Extraction du message d'erreur renvoyé par Spring Boot
   String _getErrorMessage(DioException e) {
-    // Journal de diagnostic : visible dans la console de Flutter.
     debugPrint(
       'Dio: type=${e.type} | statut=${e.response?.statusCode} | '
       'message=${e.message} | url=${e.requestOptions.uri}',
@@ -65,7 +60,6 @@ class AuthRepository {
 
     if (data is Map) {
       final message = data['message'];
-
       if (message is String && message.isNotEmpty) {
         return message;
       }
@@ -94,11 +88,10 @@ class AuthRepository {
   }
 }
 
-/// Repository accessible via Riverpod
 @riverpod
 AuthRepository authRepository(Ref ref) {
   final dio = ref.watch(dioProvider);
-  final tokenStorage = ref.watch(tokenStorageProvider);
+  final storageInstance = ref.watch(tokenStorageProvider);
 
-  return AuthRepository(dio, tokenStorage);
+  return AuthRepository(dio, storageInstance);
 }

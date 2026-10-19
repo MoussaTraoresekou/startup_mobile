@@ -6,6 +6,11 @@ class LoginResponse {
   final String prenom;
   final String email;
 
+  /// false pour un investisseur qui n'a pas encore choisi ses secteurs
+  /// (ni cliqué sur « Passer »). Vaut true si le serveur ne l'envoie pas
+  /// (autres rôles, ancienne version du serveur).
+  final bool profileCompleted;
+
   LoginResponse({
     required this.id,
     required this.token,
@@ -13,6 +18,7 @@ class LoginResponse {
     required this.nom,
     required this.prenom,
     required this.email,
+    this.profileCompleted = true,
   });
 
   factory LoginResponse.fromJson(Map<String, dynamic> json) {
@@ -23,6 +29,7 @@ class LoginResponse {
       nom: json['nom'] as String,
       prenom: json['prenom'] as String,
       email: json['email'] as String,
+      profileCompleted: json['profileCompleted'] as bool? ?? true,
     );
   }
 
@@ -34,6 +41,7 @@ class LoginResponse {
       'nom': nom,
       'prenom': prenom,
       'email': email,
+      'profileCompleted': profileCompleted,
     };
   }
 }

@@ -28,6 +28,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   final _passwordController = TextEditingController();
 
   late final AnimationController _entryController;
+  late final TapGestureRecognizer _registerRecognizer;
   bool _hidePassword = true;
 
   @override
@@ -37,6 +38,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       vsync: this,
       duration: const Duration(milliseconds: 1100),
     )..forward();
+
+    _registerRecognizer = TapGestureRecognizer()
+      ..onTap = () => context.pushNamed(AppRoutes.register.name);
   }
 
   @override
@@ -47,22 +51,43 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
   @override
   void dispose() {
+    _registerRecognizer.dispose();
     _entryController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
-  void _onSubmit() {
+  Future<void> _onSubmit() async {
+    if (ref.read(authControllerProvider).isLoading) return;
     FocusScope.of(context).unfocus();
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
-    ref
+    final response = await ref
         .read(authControllerProvider.notifier)
         .login(
           email: _emailController.text,
           password: _passwordController.text,
         );
+
+    if (!mounted || response == null) return;
+
+    final String roleUtilisateur = response.role.toUpperCase();
+
+    if (roleUtilisateur == 'INVESTISSEUR') {
+      context.go(
+        response.profileCompleted ? '/investor-dashboard' : '/choix-secteurs',
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            "Cette application est réservée exclusivement aux investisseurs.",
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   Widget _reveal({
@@ -348,10 +373,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                             fontWeight: FontWeight.bold,
                             decoration: TextDecoration.underline,
                           ),
-                          recognizer: TapGestureRecognizer()
-                            ..onTap = () {
-                              context.goNamed(AppRoutes.register.name);
-                            },
+                          recognizer: _registerRecognizer,
                         ),
                       ],
                     ),

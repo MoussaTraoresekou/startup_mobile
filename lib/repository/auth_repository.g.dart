@@ -8,17 +8,13 @@ part of 'auth_repository.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// Repository accessible via Riverpod
 
 @ProviderFor(authRepository)
 final authRepositoryProvider = AuthRepositoryProvider._();
 
-/// Repository accessible via Riverpod
-
 final class AuthRepositoryProvider
     extends $FunctionalProvider<AuthRepository, AuthRepository, AuthRepository>
     with $Provider<AuthRepository> {
-  /// Repository accessible via Riverpod
   AuthRepositoryProvider._()
     : super(
         from: null,
@@ -52,4 +48,4 @@ final class AuthRepositoryProvider
   }
 }
 
-String _$authRepositoryHash() => r'6c0d400677161ac43cdf30d136719decb560683e';
+String _$authRepositoryHash() => r'4c4957cb34a452fef8f27f6cf8e0aa394fcce0c3';
