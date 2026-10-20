@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:startup_mobile/cor/theme/app_theme.dart';
@@ -6,6 +5,7 @@ import 'package:startup_mobile/cor/utils/size_config.dart';
 import 'package:startup_mobile/models/ProjetModel .dart';
 import 'package:startup_mobile/pages/Investisseur/investor_project_card.dart';
 import 'package:startup_mobile/pages/Investisseur/investor_project_detail_screen.dart';
+import 'package:startup_mobile/repository/like/like_repository.dart';
 import 'package:startup_mobile/repository/profilInvestisseur/ProfileRepository.dart';
 import 'package:startup_mobile/repository/project_repository.dart';
 
@@ -23,8 +23,6 @@ class _InvestorDashboardScreenState
 
   String? _selectedSector;
   String _query = '';
-
-  final Set<int> _liked = {};
 
   @override
   void dispose() {
@@ -49,245 +47,141 @@ class _InvestorDashboardScreenState
     }).toList();
   }
 
+  Future<void> _toggleLike(int id) async {
+    try {
+      await ref.read(likesProvider.notifier).basculer(id);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text('Impossible de mettre à jour le like.'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final projectsAsync = ref.watch(fluxProjetsProvider);
     final sectorsAsync = ref.watch(secteursProvider);
+    final likes = ref.watch(likesProvider).value ?? <int>{};
 
     return Scaffold(
       backgroundColor: context.bgColor,
       body: SafeArea(
         child: Padding(
-          padding: EdgeInsets.fromLTRB(
-            16.w(context),
-            16.h(context),
-            16.w(context),
-            0,
-          ),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildHeader(context),
-              SizedBox(height: 24.h(context)),
+              const SizedBox(height: 20),
               Text(
                 'Découvrez les projets',
                 style: context.headingTextStyle.copyWith(
-                  fontSize: 20.w(context),
-                  fontWeight: FontWeight.bold,
-                  color: context.textDark,
+                  fontSize: 20.sp(context),
                 ),
               ),
-              SizedBox(height: 5.h(context)),
+              const SizedBox(height: 4),
               Text(
                 'Explorez les opportunités d’investissement.',
                 style: context.normalTextStyle.copyWith(
-                  fontSize: 14.w(context),
+                  fontSize: 14.sp(context),
                   color: context.textMuted,
                 ),
               ),
-              SizedBox(height: 18.h(context)),
-              TextField(
-                controller: _searchController,
-                onChanged: (value) {
-                  setState(() => _query = value);
-                },
-                style: TextStyle(
-                  color: context.textDark,
-                  fontSize: 14.w(context),
-                ),
-                decoration: InputDecoration(
-                  hintText: 'Rechercher un projet...',
-                  hintStyle: TextStyle(
-                    color: context.textMuted,
-                    fontSize: 14.w(context),
-                  ),
-                  prefixIcon: Icon(
-                    Icons.search,
-                    color: context.textMuted,
-                  ),
-                  suffixIcon: _query.isNotEmpty
-                      ? IconButton(
-                          onPressed: () {
-                            _searchController.clear();
-                            setState(() => _query = '');
-                          },
-                          icon: Icon(
-                            Icons.close,
-                            color: context.textMuted,
-                          ),
-                        )
-                      : null,
-                  filled: true,
-                  fillColor: context.background,
-                  contentPadding: EdgeInsets.symmetric(
-                    vertical: 12.h(context),
-                    horizontal: 14.w(context),
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14.w(context)),
-                    borderSide: BorderSide(color: context.borderColor),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14.w(context)),
-                    borderSide: BorderSide(color: context.borderColor),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14.w(context)),
-                    borderSide: BorderSide(
-                      color: context.primary,
-                      width: 1.5,
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(height: 22.h(context)),
-              Text(
-                'Secteurs',
-                style: context.normalTextStyle.copyWith(
-                  fontSize: 15.w(context),
-                  fontWeight: FontWeight.bold,
-                  color: context.textDark,
-                ),
-              ),
-              SizedBox(height: 10.h(context)),
+              const SizedBox(height: 16),
+              _buildSearch(context),
+              const SizedBox(height: 16),
               SizedBox(
-                height: 42.h(context),
+                height: 38,
                 child: sectorsAsync.when(
-                  loading: () => const Center(
+                  loading: () => const Align(
+                    alignment: Alignment.centerLeft,
                     child: LinearProgressIndicator(),
                   ),
                   error: (error, stackTrace) => Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
                       'Impossible de charger les secteurs.',
-                      style: TextStyle(
+                      style: context.normalTextStyle.copyWith(
+                        fontSize: 12.sp(context),
                         color: context.textMuted,
-                        fontSize: 12.w(context),
                       ),
                     ),
                   ),
                   data: (sectors) {
-                    final names = sectors
-                        .map((sector) => sector.nom)
-                        .toSet()
-                        .toList();
+                    final names =
+                        sectors.map((sector) => sector.nom).toSet().toList();
 
                     return ListView(
                       scrollDirection: Axis.horizontal,
                       children: [
                         _sectorChip(context, 'Tous', null),
-                        ...names.map(
-                          (name) => _sectorChip(context, name, name),
-                        ),
+                        ...names.map((name) => _sectorChip(context, name, name)),
                       ],
                     );
                   },
                 ),
               ),
-              SizedBox(height: 20.h(context)),
+              const SizedBox(height: 16),
               Expanded(
                 child: projectsAsync.when(
                   loading: () => Center(
-                    child: CircularProgressIndicator(
-                      color: context.primary,
-                    ),
+                    child: CircularProgressIndicator(color: context.primary),
                   ),
-                  error: (error, stackTrace) => Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(20.w(context)),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.cloud_off_outlined,
-                            size: 45.w(context),
-                            color: context.textMuted,
-                          ),
-                          SizedBox(height: 12.h(context)),
-                          Text(
-                            'Une erreur est survenue lors du chargement des projets.',
-                            textAlign: TextAlign.center,
-                            style: context.normalTextStyle.copyWith(
-                              fontSize: 14.w(context),
-                              color: context.textMuted,
-                            ),
-                          ),
-                          SizedBox(height: 12.h(context)),
-                          OutlinedButton.icon(
-                            onPressed: () {
-                              ref.invalidate(fluxProjetsProvider);
-                            },
-                            icon: const Icon(Icons.refresh),
-                            label: const Text('Réessayer'),
-                          ),
-                        ],
-                      ),
-                    ),
+                  error: (error, stackTrace) => _Message(
+                    icon: Icons.cloud_off_outlined,
+                    text: 'Une erreur est survenue lors du chargement des projets.',
+                    actionLabel: 'Réessayer',
+                    onAction: () => ref.invalidate(fluxProjetsProvider),
                   ),
                   data: (projects) {
-                    final filteredProjects = _filterProjects(projects);
+                    final filtered = _filterProjects(projects);
 
-                    if (filteredProjects.isEmpty) {
-                      return Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.search_off_rounded,
-                              size: 42.w(context),
-                              color: context.textMuted,
-                            ),
-                            SizedBox(height: 10.h(context)),
-                            Text(
-                              'Aucun projet trouvé.',
-                              style: context.normalTextStyle.copyWith(
-                                fontSize: 14.w(context),
-                                color: context.textMuted,
-                              ),
-                            ),
-                          ],
-                        ),
+                    if (filtered.isEmpty) {
+                      return const _Message(
+                        icon: Icons.search_off_rounded,
+                        text: 'Aucun projet trouvé.',
                       );
                     }
 
-                    return ListView.separated(
-                      itemCount: filteredProjects.length,
-                      physics: const BouncingScrollPhysics(),
-                      padding: EdgeInsets.only(
-                        top: 4.h(context),
-                        bottom: 24.h(context),
-                      ),
-                      separatorBuilder: (context, index) => SizedBox(
-                        height: 12.h(context),
-                      ),
-                      itemBuilder: (context, index) {
-                        final project = filteredProjects[index];
-                        final isLiked = _liked.contains(project.id);
-
-                        return InvestorProjectCard(
-                          project: project,
-                          isLiked: isLiked,
-                          onLikePressed: () {
-                            setState(() {
-                              if (isLiked) {
-                                _liked.remove(project.id);
-                              } else {
-                                _liked.add(project.id);
-                              }
-                            });
-                          },
-                          onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    InvestorProjectDetailScreen(
-                                  projet: project,
-                                ),
-                              ),
-                            );
-                          },
-                        );
+                    return RefreshIndicator(
+                      color: context.primary,
+                      onRefresh: () async {
+                        ref.invalidate(fluxProjetsProvider);
+                        try {
+                          await ref.read(fluxProjetsProvider.future);
+                        } catch (_) {}
                       },
+                      child: ListView.separated(
+                        itemCount: filtered.length,
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.only(bottom: 24),
+                        separatorBuilder: (_, __) => const SizedBox(height: 12),
+                        itemBuilder: (context, index) {
+                          final project = filtered[index];
+
+                          return InvestorProjectCard(
+                            project: project,
+                            isLiked: likes.contains(project.id),
+                            onLikePressed: () => _toggleLike(project.id),
+                            onTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      InvestorProjectDetailScreen(
+                                    projet: project,
+                                  ),
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      ),
                     );
                   },
                 ),
@@ -301,43 +195,31 @@ class _InvestorDashboardScreenState
 
   Widget _buildHeader(BuildContext context) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
+        Image.asset(
+          'assets/images/onboarding/logo_startup.png',
+          width: 40,
+          height: 40,
+          fit: BoxFit.contain,
+        ),
+        const SizedBox(width: 10),
         Expanded(
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(10.w(context)),
-                child: Image.asset(
-                  'assets/images/onboarding/logo_startup.png',
-                  width: 44.w(context),
-                  height: 44.w(context),
-                  fit: BoxFit.contain,
+              Text(
+                'Entrepreneur360',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: context.headingTextStyle.copyWith(
+                  fontSize: 18.sp(context),
                 ),
               ),
-              SizedBox(width: 12.w(context)),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Entrepreneur360',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: context.headingTextStyle.copyWith(
-                        fontSize: 20.w(context),
-                        fontWeight: FontWeight.bold,
-                        color: context.textDark,
-                      ),
-                    ),
-                    Text(
-                      'Espace Investisseur',
-                      style: context.normalTextStyle.copyWith(
-                        fontSize: 13.w(context),
-                        color: context.textMuted,
-                      ),
-                    ),
-                  ],
+              Text(
+                'Espace Investisseur',
+                style: context.normalTextStyle.copyWith(
+                  fontSize: 12.sp(context),
+                  color: context.textMuted,
                 ),
               ),
             ],
@@ -348,7 +230,7 @@ class _InvestorDashboardScreenState
             IconButton(
               icon: Icon(
                 Icons.notifications_none_rounded,
-                size: 26.w(context),
+                size: 26,
                 color: context.textDark,
               ),
               onPressed: () {
@@ -356,22 +238,20 @@ class _InvestorDashboardScreenState
                   ..hideCurrentSnackBar()
                   ..showSnackBar(
                     const SnackBar(
-                      content: Text(
-                        'Notifications : bientôt disponible',
-                      ),
+                      content: Text('Notifications : bientôt disponible'),
                       behavior: SnackBarBehavior.floating,
                     ),
                   );
               },
             ),
             Positioned(
-              right: 8.w(context),
-              top: 8.h(context),
+              right: 11,
+              top: 11,
               child: Container(
-                width: 8.w(context),
-                height: 8.w(context),
-                decoration: const BoxDecoration(
-                  color: Colors.red,
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: context.badgeRed,
                   shape: BoxShape.circle,
                 ),
               ),
@@ -382,34 +262,110 @@ class _InvestorDashboardScreenState
     );
   }
 
-  Widget _sectorChip(
-    BuildContext context,
-    String label,
-    String? value,
-  ) {
+  Widget _buildSearch(BuildContext context) {
+    OutlineInputBorder border(Color color, [double width = 1]) =>
+        OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: color, width: width),
+        );
+
+    return TextField(
+      controller: _searchController,
+      onChanged: (value) => setState(() => _query = value),
+      style: context.normalTextStyle.copyWith(fontSize: 15.sp(context)),
+      decoration: InputDecoration(
+        hintText: 'Rechercher un projet...',
+        hintStyle: context.normalTextStyle.copyWith(
+          fontSize: 14.sp(context),
+          color: context.textMuted,
+        ),
+        prefixIcon: Icon(Icons.search, color: context.textMuted),
+        suffixIcon: _query.isNotEmpty
+            ? IconButton(
+                onPressed: () {
+                  _searchController.clear();
+                  setState(() => _query = '');
+                },
+                icon: Icon(Icons.close, color: context.textMuted),
+              )
+            : null,
+        filled: true,
+        fillColor: context.background,
+        contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+        border: border(context.borderColor),
+        enabledBorder: border(context.borderColor),
+        focusedBorder: border(context.borderSelected, 1.5),
+      ),
+    );
+  }
+
+  Widget _sectorChip(BuildContext context, String label, String? value) {
     final isSelected = _selectedSector == value;
 
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 4.w(context)),
+      padding: const EdgeInsets.only(right: 8),
       child: ChoiceChip(
         label: Text(label),
         selected: isSelected,
-        onSelected: (selected) {
-          if (selected) {
-            setState(() => _selectedSector = value);
-          }
-        },
+        showCheckmark: false,
+        onSelected: (_) => setState(() => _selectedSector = value),
+        shape: const StadiumBorder(),
         selectedColor: context.primary,
-        checkmarkColor: Colors.white,
         backgroundColor: context.background,
         side: BorderSide(
           color: isSelected ? context.primary : context.borderColor,
-          width: 1,
         ),
         labelStyle: context.normalTextStyle.copyWith(
-          color: isSelected ? Colors.white : context.textDark,
+          fontSize: 13.sp(context),
           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-          fontSize: 13.w(context),
+          color: isSelected ? context.textInverse : context.textDark,
+        ),
+      ),
+    );
+  }
+}
+
+// Message simple pour les états « erreur » et « liste vide ».
+class _Message extends StatelessWidget {
+  const _Message({
+    required this.icon,
+    required this.text,
+    this.actionLabel,
+    this.onAction,
+  });
+
+  final IconData icon;
+  final String text;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 44, color: context.textMuted),
+            const SizedBox(height: 12),
+            Text(
+              text,
+              textAlign: TextAlign.center,
+              style: context.normalTextStyle.copyWith(
+                fontSize: 14.sp(context),
+                color: context.textMuted,
+              ),
+            ),
+            if (actionLabel != null) ...[
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: onAction,
+                icon: const Icon(Icons.refresh),
+                label: Text(actionLabel!),
+              ),
+            ],
+          ],
         ),
       ),
     );

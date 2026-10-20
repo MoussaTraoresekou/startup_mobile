@@ -24,3 +24,11 @@ extension SizeConfigExtension on num {
   /// Raccourci pour la largeur responsive. Exemple : `15.w(context)`
   double w(BuildContext context) => SizeConfig.w(this.toDouble(), context);
 }
+extension SpExtension on num {
+  /// Taille de texte responsive, limitée à ±20 % pour éviter
+  /// un texte trop petit ou trop grand selon l'écran.
+  /// Exemple : `14.sp(context)`
+  double sp(BuildContext context) => SizeConfig.w(toDouble(), context)
+      .clamp(toDouble() * 0.9, toDouble() * 1.2)
+      .toDouble();
+}

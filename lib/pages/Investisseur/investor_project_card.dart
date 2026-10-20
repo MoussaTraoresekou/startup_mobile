@@ -1,8 +1,8 @@
-
 import 'package:flutter/material.dart';
 import 'package:startup_mobile/cor/theme/app_theme.dart';
 import 'package:startup_mobile/cor/utils/size_config.dart';
 import 'package:startup_mobile/models/ProjetModel .dart';
+import 'package:startup_mobile/pages/Investisseur/pitch_utils.dart';
 
 class InvestorProjectCard extends StatelessWidget {
   const InvestorProjectCard({
@@ -18,163 +18,123 @@ class InvestorProjectCard extends StatelessWidget {
   final bool isLiked;
   final VoidCallback onLikePressed;
 
-  bool get _estVideo {
-    final url = project.pithUrl.toLowerCase().split('?').first;
-    return url.endsWith('.mp4');
-  }
-
   @override
   Widget build(BuildContext context) {
-    final estVideo = _estVideo;
+    final estVideo = pitchTypeOf(project.pithUrl) == PitchType.video;
 
     return Material(
       color: context.background,
-      borderRadius: BorderRadius.circular(16.w(context)),
+      borderRadius: BorderRadius.circular(12),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16.w(context)),
+        borderRadius: BorderRadius.circular(12),
         child: Container(
-          height: 164.h(context),
+          padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16.w(context)),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: context.borderColor),
-            boxShadow: [
-              BoxShadow(
-                color: context.shadowColor.withValues(alpha: 0.06),
-                blurRadius: 8.w(context),
-                offset: Offset(0, 3.h(context)),
-              ),
-            ],
           ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 105.w(context),
-                decoration: BoxDecoration(
-                  color: context.primarySoft,
-                  borderRadius: BorderRadius.horizontal(
-                    left: Radius.circular(15.w(context)),
-                  ),
-                ),
-                child: Center(
-                  child: Container(
-                    width: 58.w(context),
-                    height: 58.w(context),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
                     decoration: BoxDecoration(
-                      color: context.background,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: context.shadowColor.withValues(alpha: 0.08),
-                          blurRadius: 10.w(context),
-                          offset: Offset(0, 3.h(context)),
-                        ),
-                      ],
+                      color: context.primarySoft,
+                      borderRadius: BorderRadius.circular(10),
                     ),
                     child: Icon(
                       estVideo
-                          ? Icons.play_circle_fill_rounded
-                          : Icons.picture_as_pdf_rounded,
-                      size: 36.w(context),
+                          ? Icons.play_circle_outline_rounded
+                          : Icons.picture_as_pdf_outlined,
                       color: context.primary,
+                      size: 26,
                     ),
                   ),
-                ),
-              ),
-              Expanded(
-                child: Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    12.w(context),
-                    10.h(context),
-                    8.w(context),
-                    10.h(context),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              project.titre,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: context.titleTextStyle.copyWith(
-                                fontSize: 15.w(context),
-                                fontWeight: FontWeight.bold,
-                                color: context.textDark,
-                              ),
-                            ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          project.titre,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: context.titleTextStyle.copyWith(
+                            fontSize: 16.sp(context),
+                            fontWeight: FontWeight.bold,
                           ),
-                          SizedBox(
-                            width: 32.w(context),
-                            height: 32.h(context),
-                            child: IconButton(
-                              visualDensity: VisualDensity.compact,
-                              padding: EdgeInsets.zero,
-                              onPressed: onLikePressed,
-                              icon: Icon(
-                                isLiked
-                                    ? Icons.favorite
-                                    : Icons.favorite_border,
-                                size: 21.w(context),
-                                color: isLiked
-                                    ? Colors.red
-                                    : context.textMuted,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 2.h(context)),
-                      Text(
-                        '${project.secteur} • ${project.porteurNomComplet}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: context.normalTextStyle.copyWith(
-                          fontSize: 11.w(context),
-                          color: context.textMuted,
                         ),
-                      ),
-                      SizedBox(height: 7.h(context)),
-                      Expanded(
-                        child: Text(
-                          project.description,
-                          maxLines: 2,
+                        const SizedBox(height: 2),
+                        Text(
+                          '${project.secteur} • ${project.porteurNomComplet}',
+                          maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: context.normalTextStyle.copyWith(
-                            fontSize: 12.w(context),
-                            height: 1.35,
+                            fontSize: 12.sp(context),
                             color: context.textMuted,
                           ),
                         ),
-                      ),
-                      SizedBox(height: 5.h(context)),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              project.quotaPropose,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: context.normalTextStyle.copyWith(
-                                fontSize: 12.w(context),
-                                fontWeight: FontWeight.bold,
-                                color: context.primaryOrange,
-                              ),
-                            ),
-                          ),
-                          Icon(
-                            Icons.arrow_forward_ios,
-                            size: 13.w(context),
-                            color: context.primary,
-                          ),
-                        ],
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
+                  IconButton(
+                    onPressed: onLikePressed,
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                      minWidth: 36,
+                      minHeight: 36,
+                    ),
+                    icon: Icon(
+                      isLiked ? Icons.favorite : Icons.favorite_border,
+                      color: isLiked ? context.badgeRed : context.textMuted,
+                      size: 22,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Text(
+                project.description,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: context.normalTextStyle.copyWith(
+                  fontSize: 13.sp(context),
+                  height: 1.4,
+                  color: context.textMuted,
                 ),
+              ),
+              const SizedBox(height: 12),
+              Divider(height: 1, color: context.borderColor),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Text(
+                    'Quota proposé',
+                    style: context.normalTextStyle.copyWith(
+                      fontSize: 12.sp(context),
+                      color: context.textMuted,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      project.quotaPropose,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.end,
+                      style: context.normalTextStyle.copyWith(
+                        fontSize: 13.sp(context),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
