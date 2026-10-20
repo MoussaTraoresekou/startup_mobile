@@ -1,5 +1,4 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:startup_mobile/cor/reseau/dio_provider.dart';
 import 'package:startup_mobile/cor/storage/token_storage.dart';
 import 'package:startup_mobile/repository/profilInvestisseur/ProfileRepository.dart';
 

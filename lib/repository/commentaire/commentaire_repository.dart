@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:startup_mobile/cor/reseau/dio_provider.dart';
-import 'package:startup_mobile/model/commentaire_model.dart';
+import 'package:startup_mobile/models/commentaire_model.dart';
 
 part 'commentaire_repository.g.dart';
 
