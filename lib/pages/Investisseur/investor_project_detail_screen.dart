@@ -123,8 +123,9 @@ class _InvestorProjectDetailScreenState
     }
   }
 
-  Future<void> _contacterPorteur() async {
-  // Conserve le comportement existant si un callback externe est fourni.
+
+Future<void> _contacterPorteur() async {
+  // Conserver le comportement existant si un callback externe est fourni.
   if (widget.onContactPressed != null) {
     widget.onContactPressed!.call();
     return;
@@ -135,30 +136,40 @@ class _InvestorProjectDetailScreenState
   setState(() => _contactEnCours = true);
 
   try {
+    // 1. Ouvrir ou récupérer la conversation avec le porteur.
     final conversation = await ref
         .read(conversationControllerProvider.notifier)
         .ouvrirConversation(widget.projet.id);
 
-    // Vérifie que le backend a bien retourné une conversation.
+    if (!mounted) return;
+
     if (conversation == null) {
-      if (mounted) {
-        _afficherMessage(
-          'Impossible de récupérer la conversation avec le porteur.',
-        );
-      }
+      _afficherMessage(
+        'Impossible de récupérer la conversation avec le porteur.',
+      );
       return;
     }
 
     debugPrint('CONVERSATION REÇUE : ${conversation.id}');
 
-    await ref
+    // 2. Établir la connexion WebSocket.
+    final connecte = await ref
         .read(messagerieControllerProvider.notifier)
         .connecter(conversation.id);
 
-    debugPrint('CONNEXION MESSAGERIE TERMINÉE');
-
     if (!mounted) return;
 
+    // 3. Ne pas ouvrir l'écran si la connexion a échoué.
+    if (!connecte) {
+      _afficherMessage(
+        'Impossible de connecter la messagerie. Réessayez.',
+      );
+      return;
+    }
+
+    debugPrint('CONNEXION MESSAGERIE RÉUSSIE');
+
+    // 4. Ouvrir l'écran de discussion.
     await context.push('/conversation', extra: conversation);
   } catch (e, stackTrace) {
     debugPrint('ERREUR OUVERTURE MESSAGERIE : $e');
@@ -175,6 +186,7 @@ class _InvestorProjectDetailScreenState
     }
   }
 }
+
   Future<void> _ouvrirFormulaireAvis() async {
     final envoye = await showModalBottomSheet<bool>(
       context: context,
