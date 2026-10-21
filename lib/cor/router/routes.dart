@@ -3,10 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:startup_mobile/cor/storage/token_storage.dart';
+import 'package:startup_mobile/models/ConversationModel.dart';
 import 'package:startup_mobile/models/ProjetModel%20.dart';
 import 'package:startup_mobile/pages/Investisseur/investisseurAcceuil.dart';
 import 'package:startup_mobile/pages/Investisseur/investor_project_detail_screen.dart';
 import 'package:startup_mobile/pages/Login/loginscreen.dart';
+import 'package:startup_mobile/pages/chat/private_chat_screen.dart';
 import 'package:startup_mobile/pages/register/registerScreen.dart';
 import 'package:startup_mobile/pages/secteur/secteurPourInv.dart';
 import 'package:startup_mobile/pages/splush/splushScreen.dart';
@@ -106,6 +109,46 @@ GoRouter appRouter(Ref ref) {
           return InvestorProjectDetailScreen(projet: projet);
         },
       ),
+      GoRoute(
+  path: '/conversation',
+  builder: (context, state) {
+    final conversation = state.extra as ConversationModel;
+    final tokenStorage = ref.read(tokenStorageProvider);
+
+    return FutureBuilder<int?>(
+      future: tokenStorage.readUserId(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
+
+        final utilisateurId = snapshot.data;
+
+        if (utilisateurId == null) {
+          return const Scaffold(
+            body: Center(
+              child: Text(
+                'Impossible de récupérer votre compte. '
+                'Veuillez vous reconnecter.',
+              ),
+            ),
+          );
+        }
+
+        return PrivateChatScreen(
+          conversationId: conversation.id,
+          interlocuteurNom: conversation.porteurNom,
+          projetTitre: conversation.projetTitre,
+          utilisateurConnecteId: utilisateurId,
+        );
+      },
+    );
+  },
+),
     ],
   );
 }

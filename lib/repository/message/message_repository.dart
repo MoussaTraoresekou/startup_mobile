@@ -48,75 +48,116 @@ class MessageRepository {
   }
 
   /// Lit le JWT et ouvre la connexion WebSocket d'une conversation.
-  Future<void> connecterConversation(int conversationId) async {
-    final token = await _tokenStorage.readToken();
+  
+Future<void> connecterConversation(int conversationId) async {
+  final token = await _tokenStorage.readToken();
 
-    if (token == null || token.isEmpty) {
-      throw Exception('Session expirée. Veuillez vous reconnecter.');
-    }
-
-    if (_conversationConnectee == conversationId && _client != null) {
-      return;
-    }
-
-    deconnecter();
-
-    final baseUri = Uri.parse(_dio.options.baseUrl);
-
-    final websocketUri = Uri(
-      scheme: baseUri.scheme == 'https' ? 'wss' : 'ws',
-      host: baseUri.host,
-      port: baseUri.hasPort ? baseUri.port : null,
-      path: '/ws',
-    );
-
-    late final StompClient client;
-
-    client = StompClient(
-      config: StompConfig(
-        url: websocketUri.toString(),
-        stompConnectHeaders: {'Authorization': 'Bearer $token'},
-        onConnect: (frame) {
-          _connecte = true;
-
-          client.subscribe(
-            destination: '/topic/conversations/$conversationId',
-            callback: (frame) {
-              final body = frame.body;
-
-              if (body == null || body.isEmpty) return;
-
-              try {
-                final json = jsonDecode(body) as Map<String, dynamic>;
-
-                final message = MessageResponseModel.fromJson(json);
-
-                if (message.conversationId == conversationId &&
-                    !_messagesController.isClosed) {
-                  _messagesController.add(message);
-                }
-              } catch (e) {
-                // Une réponse mal formée ne doit pas interrompre le flux.
-              }
-            },
-          );
-        },
-        onDisconnect: (frame) {
-          _connecte = false;
-        },
-        onStompError: (frame) {
-          _connecte = false;
-        },
-        onWebSocketError: (error) {
-          _connecte = false;
-        },
-      ),
-    );
-
-    _client = client;
-    _conversationConnectee = conversationId;
-    client.activate();
+  if (token == null || token.isEmpty) {
+    throw Exception('Session expirée. Veuillez vous reconnecter.');
   }
+
+  if (_conversationConnectee == conversationId &&
+      _client != null &&
+      _connecte) {
+    return;
+  }
+
+  deconnecter();
+
+  final baseUri = Uri.parse(_dio.options.baseUrl);
+
+  final websocketUri = Uri(
+    scheme: baseUri.scheme == 'https' ? 'wss' : 'ws',
+    host: baseUri.host,
+    port: baseUri.hasPort ? baseUri.port : null,
+    path: '/ws',
+  );
+
+  final completer = Completer<void>();
+
+  late final StompClient client;
+
+  client = StompClient(
+    config: StompConfig(
+      url: websocketUri.toString(),
+      stompConnectHeaders: {
+        'Authorization': 'Bearer $token',
+      },
+      onConnect: (frame) {
+        _connecte = true;
+
+        client.subscribe(
+          destination: '/topic/conversations/$conversationId',
+          callback: (frame) {
+            final body = frame.body;
+            if (body == null || body.isEmpty) return;
+
+            try {
+              final json = jsonDecode(body) as Map<String, dynamic>;
+              final message = MessageResponseModel.fromJson(json);
+
+              if (message.conversationId == conversationId &&
+                  !_messagesController.isClosed) {
+                _messagesController.add(message);
+              }
+            } catch (e) {
+              // Ignorer les messages mal formés.
+            }
+          },
+        );
+
+        if (!completer.isCompleted) {
+          completer.complete();
+        }
+      },
+      onStompError: (frame) {
+        _connecte = false;
+
+        if (!completer.isCompleted) {
+          completer.completeError(
+            Exception(
+              'Erreur STOMP : ${frame.body ?? "connexion refusée"}',
+            ),
+          );
+        }
+      },
+      onWebSocketError: (error) {
+        _connecte = false;
+
+        if (!completer.isCompleted) {
+          completer.completeError(
+            Exception('Erreur WebSocket : $error'),
+          );
+        }
+      },
+      onDisconnect: (frame) {
+        _connecte = false;
+      },
+    ),
+  );
+
+  _client = client;
+  _conversationConnectee = conversationId;
+
+  client.activate();
+
+  try {
+    await completer.future.timeout(
+      const Duration(seconds: 15),
+      onTimeout: () {
+        throw TimeoutException(
+          'La connexion WebSocket n’a pas été établie en 15 secondes.',
+        );
+      },
+    );
+  } catch (_) {
+    if (identical(_client, client)) {
+      deconnecter();
+    }
+    rethrow;
+  }
+}
+
 
   /// Envoie un message au contrôleur WebSocket Spring Boot.
   Future<void> envoyerMessage({

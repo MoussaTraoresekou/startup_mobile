@@ -13,7 +13,7 @@ class AuthRepository {
   final TokenStorage _tokenStorage;
 
   AuthRepository(this._dio, this._tokenStorage);
-
+/*
   Future<LoginResponse> login(String email, String password) async {
     try {
       final response = await _dio.post(
@@ -34,6 +34,32 @@ class AuthRepository {
       throw Exception(_getErrorMessage(e));
     }
   }
+  */
+  Future<LoginResponse> login(String email, String password) async {
+  try {
+    final response = await _dio.post(
+      '/api/user/login',
+      data: {
+        'email': email.trim().toLowerCase(),
+        'password': password,
+      },
+    );
+
+    final loginResponse = LoginResponse.fromJson(response.data);
+
+    await _tokenStorage.saveToken(loginResponse.token);
+    await _tokenStorage.saveProfileStatus(
+      loginResponse.profileCompleted,
+    );
+
+    // Enregistrer l'identifiant de l'utilisateur connecté.
+    await _tokenStorage.saveUserId(loginResponse.id);
+
+    return loginResponse;
+  } on DioException catch (e) {
+    throw Exception(_getErrorMessage(e));
+  }
+}
 
   Future<void> register(InvestorRegisterDto dto) async {
     try {

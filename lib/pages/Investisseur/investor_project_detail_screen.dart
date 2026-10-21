@@ -1,7 +1,10 @@
 import 'package:chewie/chewie.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:startup_mobile/controller/messageri/messagerie_controller.dart';
 import 'package:startup_mobile/repository/like/like_repository.dart';
+import 'package:startup_mobile/controller/conversation/conversation_controller.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:video_player/video_player.dart';
 
@@ -31,6 +34,7 @@ class _InvestorProjectDetailScreenState
     extends ConsumerState<InvestorProjectDetailScreen> {
   VideoPlayerController? _videoController;
   ChewieController? _chewieController;
+  bool _contactEnCours = false;
 
   @override
   void initState() {
@@ -119,14 +123,58 @@ class _InvestorProjectDetailScreenState
     }
   }
 
-  void _contacterPorteur() {
-    if (widget.onContactPressed != null) {
-      widget.onContactPressed!.call();
-    } else {
-      _afficherMessage('La messagerie n’est pas encore reliée.');
-    }
+  Future<void> _contacterPorteur() async {
+  // Conserve le comportement existant si un callback externe est fourni.
+  if (widget.onContactPressed != null) {
+    widget.onContactPressed!.call();
+    return;
   }
 
+  if (_contactEnCours) return;
+
+  setState(() => _contactEnCours = true);
+
+  try {
+    final conversation = await ref
+        .read(conversationControllerProvider.notifier)
+        .ouvrirConversation(widget.projet.id);
+
+    // Vérifie que le backend a bien retourné une conversation.
+    if (conversation == null) {
+      if (mounted) {
+        _afficherMessage(
+          'Impossible de récupérer la conversation avec le porteur.',
+        );
+      }
+      return;
+    }
+
+    debugPrint('CONVERSATION REÇUE : ${conversation.id}');
+
+    await ref
+        .read(messagerieControllerProvider.notifier)
+        .connecter(conversation.id);
+
+    debugPrint('CONNEXION MESSAGERIE TERMINÉE');
+
+    if (!mounted) return;
+
+    await context.push('/conversation', extra: conversation);
+  } catch (e, stackTrace) {
+    debugPrint('ERREUR OUVERTURE MESSAGERIE : $e');
+    debugPrint('DÉTAILS : $stackTrace');
+
+    if (mounted) {
+      _afficherMessage(
+        'Une erreur est survenue lors de l’ouverture de la messagerie.',
+      );
+    }
+  } finally {
+    if (mounted) {
+      setState(() => _contactEnCours = false);
+    }
+  }
+}
   Future<void> _ouvrirFormulaireAvis() async {
     final envoye = await showModalBottomSheet<bool>(
       context: context,
@@ -455,7 +503,7 @@ class _InvestorProjectDetailScreenState
           width: double.infinity,
           height: 48,
           child: ElevatedButton.icon(
-            onPressed: _contacterPorteur,
+            onPressed: _contactEnCours ? null : _contacterPorteur,
             style: ElevatedButton.styleFrom(
               backgroundColor: context.primaryOrange,
               foregroundColor: Colors.white,

@@ -88,3 +88,10 @@ class ConversationRepository {
 ConversationRepository conversationRepository(Ref ref) {
   return ConversationRepository(ref.watch(dioProvider));
 }
+
+/// Provider pour récupérer les conversations de l'investisseur.
+@riverpod
+Future<List<ConversationModel>> mesConversations(Ref ref) {
+  return ref.watch(conversationRepositoryProvider).mesConversations();
+}
+
