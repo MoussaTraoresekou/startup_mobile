@@ -1,7 +1,10 @@
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import 'package:startup_mobile/cor/theme/app_theme.dart';
 import 'package:startup_mobile/cor/utils/size_config.dart';
+import 'package:startup_mobile/cor/storage/token_storage.dart';
 import 'package:startup_mobile/models/ProjetModel .dart';
 import 'package:startup_mobile/pages/Investisseur/investor_project_card.dart';
 import 'package:startup_mobile/pages/Investisseur/investor_project_detail_screen.dart';
@@ -21,8 +24,16 @@ class _InvestorDashboardScreenState
     extends ConsumerState<InvestorDashboardScreen> {
   final TextEditingController _searchController = TextEditingController();
 
+  late Future<Map<String, String?>> _profileFuture;
+
   String? _selectedSector;
   String _query = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _profileFuture = ref.read(tokenStorageProvider).readUserProfile();
+  }
 
   @override
   void dispose() {
@@ -52,6 +63,7 @@ class _InvestorDashboardScreenState
       await ref.read(likesProvider.notifier).basculer(id);
     } catch (_) {
       if (!mounted) return;
+
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(
@@ -121,7 +133,9 @@ class _InvestorDashboardScreenState
                       scrollDirection: Axis.horizontal,
                       children: [
                         _sectorChip(context, 'Tous', null),
-                        ...names.map((name) => _sectorChip(context, name, name)),
+                        ...names.map(
+                          (name) => _sectorChip(context, name, name),
+                        ),
                       ],
                     );
                   },
@@ -131,11 +145,14 @@ class _InvestorDashboardScreenState
               Expanded(
                 child: projectsAsync.when(
                   loading: () => Center(
-                    child: CircularProgressIndicator(color: context.primary),
+                    child: CircularProgressIndicator(
+                      color: context.primary,
+                    ),
                   ),
                   error: (error, stackTrace) => _Message(
                     icon: Icons.cloud_off_outlined,
-                    text: 'Une erreur est survenue lors du chargement des projets.',
+                    text:
+                        'Une erreur est survenue lors du chargement des projets.',
                     actionLabel: 'Réessayer',
                     onAction: () => ref.invalidate(fluxProjetsProvider),
                   ),
@@ -153,6 +170,7 @@ class _InvestorDashboardScreenState
                       color: context.primary,
                       onRefresh: () async {
                         ref.invalidate(fluxProjetsProvider);
+
                         try {
                           await ref.read(fluxProjetsProvider.future);
                         } catch (_) {}
@@ -161,7 +179,8 @@ class _InvestorDashboardScreenState
                         itemCount: filtered.length,
                         physics: const AlwaysScrollableScrollPhysics(),
                         padding: const EdgeInsets.only(bottom: 24),
-                        separatorBuilder: (_, __) => const SizedBox(height: 12),
+                        separatorBuilder: (_, __) =>
+                            const SizedBox(height: 12),
                         itemBuilder: (context, index) {
                           final project = filtered[index];
 
@@ -193,36 +212,56 @@ class _InvestorDashboardScreenState
     );
   }
 
+  // En-tête : logo, nom de l'utilisateur connecté et notifications.
   Widget _buildHeader(BuildContext context) {
     return Row(
       children: [
         Image.asset(
           'assets/images/onboarding/logo_startup.png',
-          width: 40,
-          height: 40,
+          width: 70,
+          height: 70,
           fit: BoxFit.contain,
         ),
         const SizedBox(width: 10),
         Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Entrepreneur360',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: context.headingTextStyle.copyWith(
-                  fontSize: 18.sp(context),
-                ),
-              ),
-              Text(
-                'Espace Investisseur',
-                style: context.normalTextStyle.copyWith(
-                  fontSize: 12.sp(context),
-                  color: context.textMuted,
-                ),
-              ),
-            ],
+          child: FutureBuilder<Map<String, String?>>(
+            future: _profileFuture,
+            builder: (context, snapshot) {
+              final profil = snapshot.data ?? {};
+
+              final prenom = (profil['prenom'] ?? '').trim();
+              final nom = (profil['nom'] ?? '').trim();
+
+              final nomComplet = '$prenom $nom'.trim();
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    nomComplet.isNotEmpty
+                        ? nomComplet
+                        : snapshot.connectionState == ConnectionState.waiting
+                            ? 'Chargement...'
+                            : 'Investisseur',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.headingTextStyle.copyWith(
+                      fontSize: 16.sp(context),
+                    ),
+                  ),
+                  Text(
+                    'Espace Investisseur',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.normalTextStyle.copyWith(
+                      fontSize: 12.sp(context),
+                      color: context.textMuted,
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
         ),
         Stack(
@@ -272,26 +311,37 @@ class _InvestorDashboardScreenState
     return TextField(
       controller: _searchController,
       onChanged: (value) => setState(() => _query = value),
-      style: context.normalTextStyle.copyWith(fontSize: 15.sp(context)),
+      style: context.normalTextStyle.copyWith(
+        fontSize: 15.sp(context),
+      ),
       decoration: InputDecoration(
         hintText: 'Rechercher un projet...',
         hintStyle: context.normalTextStyle.copyWith(
           fontSize: 14.sp(context),
           color: context.textMuted,
         ),
-        prefixIcon: Icon(Icons.search, color: context.textMuted),
+        prefixIcon: Icon(
+          Icons.search,
+          color: context.textMuted,
+        ),
         suffixIcon: _query.isNotEmpty
             ? IconButton(
                 onPressed: () {
                   _searchController.clear();
                   setState(() => _query = '');
                 },
-                icon: Icon(Icons.close, color: context.textMuted),
+                icon: Icon(
+                  Icons.close,
+                  color: context.textMuted,
+                ),
               )
             : null,
         filled: true,
         fillColor: context.background,
-        contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          vertical: 14,
+          horizontal: 16,
+        ),
         border: border(context.borderColor),
         enabledBorder: border(context.borderColor),
         focusedBorder: border(context.borderSelected, 1.5),
@@ -299,7 +349,11 @@ class _InvestorDashboardScreenState
     );
   }
 
-  Widget _sectorChip(BuildContext context, String label, String? value) {
+  Widget _sectorChip(
+    BuildContext context,
+    String label,
+    String? value,
+  ) {
     final isSelected = _selectedSector == value;
 
     return Padding(
@@ -325,7 +379,7 @@ class _InvestorDashboardScreenState
   }
 }
 
-// Message simple pour les états « erreur » et « liste vide ».
+// Widget commun pour afficher les erreurs et les listes vides.
 class _Message extends StatelessWidget {
   const _Message({
     required this.icon,
@@ -347,7 +401,11 @@ class _Message extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 44, color: context.textMuted),
+            Icon(
+              icon,
+              size: 44,
+              color: context.textMuted,
+            ),
             const SizedBox(height: 12),
             Text(
               text,

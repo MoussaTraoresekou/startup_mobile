@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:startup_mobile/controller/messageri/messagerie_controller.dart';
+import 'package:startup_mobile/pages/Investisseur/pith_cover.dart';
 import 'package:startup_mobile/repository/like/like_repository.dart';
 import 'package:startup_mobile/controller/conversation/conversation_controller.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -36,11 +37,10 @@ class _InvestorProjectDetailScreenState
   ChewieController? _chewieController;
   bool _contactEnCours = false;
 
-  @override
-  void initState() {
-    super.initState();
-    _initialiserVideo();
-  }
+  // La vidéo n'est chargée que lorsque l'utilisateur appuie sur lecture :
+  // avant cela, on affiche le visuel du pitch (au lieu d'un fond noir).
+  bool _lectureDemandee = false;
+  bool _erreurVideo = false;
 
   @override
   void dispose() {
@@ -54,6 +54,17 @@ class _InvestorProjectDetailScreenState
 
   String get _pitchUrl => widget.projet.pithUrl.trim();
   PitchType get _type => pitchTypeOf(_pitchUrl);
+
+  Future<void> _lancerVideo() async {
+    if (_lectureDemandee) return;
+
+    setState(() {
+      _lectureDemandee = true;
+      _erreurVideo = false;
+    });
+
+    await _initialiserVideo();
+  }
 
   Future<void> _initialiserVideo() async {
     if (_type != PitchType.video) return;
@@ -70,7 +81,7 @@ class _InvestorProjectDetailScreenState
 
       final chewie = ChewieController(
         videoPlayerController: controller,
-        autoPlay: false,
+        autoPlay: true,
         looping: false,
         aspectRatio: controller.value.aspectRatio,
         materialProgressColors: ChewieProgressColors(
@@ -84,7 +95,7 @@ class _InvestorProjectDetailScreenState
       setState(() => _chewieController = chewie);
     } catch (e) {
       debugPrint('Erreur de chargement du pitch : $e');
-      if (mounted) setState(() {});
+      if (mounted) setState(() => _erreurVideo = true);
     }
   }
 
@@ -123,69 +134,68 @@ class _InvestorProjectDetailScreenState
     }
   }
 
-
-Future<void> _contacterPorteur() async {
-  // Conserver le comportement existant si un callback externe est fourni.
-  if (widget.onContactPressed != null) {
-    widget.onContactPressed!.call();
-    return;
-  }
-
-  if (_contactEnCours) return;
-
-  setState(() => _contactEnCours = true);
-
-  try {
-    // 1. Ouvrir ou récupérer la conversation avec le porteur.
-    final conversation = await ref
-        .read(conversationControllerProvider.notifier)
-        .ouvrirConversation(widget.projet.id);
-
-    if (!mounted) return;
-
-    if (conversation == null) {
-      _afficherMessage(
-        'Impossible de récupérer la conversation avec le porteur.',
-      );
+  Future<void> _contacterPorteur() async {
+    // Conserver le comportement existant si un callback externe est fourni.
+    if (widget.onContactPressed != null) {
+      widget.onContactPressed!.call();
       return;
     }
 
-    debugPrint('CONVERSATION REÇUE : ${conversation.id}');
+    if (_contactEnCours) return;
 
-    // 2. Établir la connexion WebSocket.
-    final connecte = await ref
-        .read(messagerieControllerProvider.notifier)
-        .connecter(conversation.id);
+    setState(() => _contactEnCours = true);
 
-    if (!mounted) return;
+    try {
+      // 1. Ouvrir ou récupérer la conversation avec le porteur.
+      final conversation = await ref
+          .read(conversationControllerProvider.notifier)
+          .ouvrirConversation(widget.projet.id);
 
-    // 3. Ne pas ouvrir l'écran si la connexion a échoué.
-    if (!connecte) {
-      _afficherMessage(
-        'Impossible de connecter la messagerie. Réessayez.',
-      );
-      return;
-    }
+      if (!mounted) return;
 
-    debugPrint('CONNEXION MESSAGERIE RÉUSSIE');
+      if (conversation == null) {
+        _afficherMessage(
+          'Impossible de récupérer la conversation avec le porteur.',
+        );
+        return;
+      }
 
-    // 4. Ouvrir l'écran de discussion.
-    await context.push('/conversation', extra: conversation);
-  } catch (e, stackTrace) {
-    debugPrint('ERREUR OUVERTURE MESSAGERIE : $e');
-    debugPrint('DÉTAILS : $stackTrace');
+      debugPrint('CONVERSATION REÇUE : ${conversation.id}');
 
-    if (mounted) {
-      _afficherMessage(
-        'Une erreur est survenue lors de l’ouverture de la messagerie.',
-      );
-    }
-  } finally {
-    if (mounted) {
-      setState(() => _contactEnCours = false);
+      // 2. Établir la connexion WebSocket.
+      final connecte = await ref
+          .read(messagerieControllerProvider.notifier)
+          .connecter(conversation.id);
+
+      if (!mounted) return;
+
+      // 3. Ne pas ouvrir l'écran si la connexion a échoué.
+      if (!connecte) {
+        _afficherMessage(
+          'Impossible de connecter la messagerie. Réessayez.',
+        );
+        return;
+      }
+
+      debugPrint('CONNEXION MESSAGERIE RÉUSSIE');
+
+      // 4. Ouvrir l'écran de discussion.
+      await context.push('/conversation', extra: conversation);
+    } catch (e, stackTrace) {
+      debugPrint('ERREUR OUVERTURE MESSAGERIE : $e');
+      debugPrint('DÉTAILS : $stackTrace');
+
+      if (mounted) {
+        _afficherMessage(
+          'Une erreur est survenue lors de l’ouverture de la messagerie.',
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _contactEnCours = false);
+      }
     }
   }
-}
 
   Future<void> _ouvrirFormulaireAvis() async {
     final envoye = await showModalBottomSheet<bool>(
@@ -340,13 +350,14 @@ Future<void> _contacterPorteur() async {
   Widget _construireContenuPitch() {
     switch (_type) {
       case PitchType.video:
-        if (_videoController?.value.hasError == true) {
+        if (_erreurVideo || _videoController?.value.hasError == true) {
           return _blocPitch(
             icon: Icons.videocam_off_outlined,
             message: 'Impossible de charger la vidéo.',
           );
         }
 
+        // La vidéo est prête : lecteur.
         if (_chewieController != null) {
           return Container(
             color: Colors.black,
@@ -354,29 +365,64 @@ Future<void> _contacterPorteur() async {
           );
         }
 
-        return Container(
-          color: Colors.black,
-          child: const Center(
-            child: CircularProgressIndicator(color: Colors.white),
-          ),
+        // Chargement après l'appui sur lecture.
+        if (_lectureDemandee) {
+          return const PitchCover(
+            type: PitchType.video,
+            showPlay: false,
+            showTag: false,
+            child: Center(
+              child: CircularProgressIndicator(color: Colors.white),
+            ),
+          );
+        }
+
+        // État initial : visuel du pitch avec bouton lecture.
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            const PitchCover(type: PitchType.video),
+            Positioned.fill(
+              child: Material(
+                type: MaterialType.transparency,
+                child: InkWell(onTap: _lancerVideo),
+              ),
+            ),
+          ],
         );
 
       case PitchType.pdf:
-        return _blocPitch(
-          icon: Icons.picture_as_pdf_outlined,
-          message: 'Présentation du projet (PDF)',
-          action: OutlinedButton.icon(
-            onPressed: _ouvrirPdf,
-            style: OutlinedButton.styleFrom(
-              foregroundColor: context.primary,
-              side: BorderSide(color: context.primary),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            const PitchCover(type: PitchType.pdf),
+            Positioned.fill(
+              child: Material(
+                type: MaterialType.transparency,
+                child: InkWell(onTap: _ouvrirPdf),
               ),
             ),
-            icon: const Icon(Icons.open_in_new_rounded, size: 18),
-            label: const Text('Ouvrir le PDF'),
-          ),
+            Positioned(
+              right: 12,
+              bottom: 12,
+              child: ElevatedButton.icon(
+                onPressed: _ouvrirPdf,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: context.primary,
+                  foregroundColor: context.textInverse,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                icon: const Icon(Icons.open_in_new_rounded, size: 18),
+                label: const Text(
+                  'Ouvrir le PDF',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+          ],
         );
 
       case PitchType.none:

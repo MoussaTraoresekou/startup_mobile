@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:startup_mobile/cor/theme/app_theme.dart';
 import 'package:startup_mobile/cor/utils/size_config.dart';
@@ -11,8 +10,7 @@ class InvestorMainScreen extends StatefulWidget {
   const InvestorMainScreen({super.key});
 
   @override
-  State<InvestorMainScreen> createState() =>
-      _InvestorMainScreenState();
+  State<InvestorMainScreen> createState() => _InvestorMainScreenState();
 }
 
 class _InvestorMainScreenState extends State<InvestorMainScreen> {
@@ -50,18 +48,12 @@ class _InvestorMainScreenState extends State<InvestorMainScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: context.bgColor,
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _pages,
-      ),
+      body: IndexedStack(index: _selectedIndex, children: _pages),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: context.background,
           border: Border(
-            top: BorderSide(
-              color: context.borderColor,
-              width: 0.5,
-            ),
+            top: BorderSide(color: context.borderColor, width: 0.5),
           ),
         ),
         child: SafeArea(
@@ -83,16 +75,12 @@ class _InvestorMainScreenState extends State<InvestorMainScreen> {
                     },
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 180),
-                      padding: EdgeInsets.symmetric(
-                        vertical: 5.h(context),
-                      ),
+                      padding: EdgeInsets.symmetric(vertical: 5.h(context)),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(
-                            selected
-                                ? _selectedIcons[index]
-                                : _icons[index],
+                            selected ? _selectedIcons[index] : _icons[index],
                             size: 23,
                             color: selected
                                 ? context.primary
@@ -147,9 +135,7 @@ class _InvestorPlaceholderPage extends StatelessWidget {
         elevation: 0,
         title: Text(
           title,
-          style: context.headingTextStyle.copyWith(
-            fontSize: 19.sp(context),
-          ),
+          style: context.headingTextStyle.copyWith(fontSize: 19.sp(context)),
         ),
       ),
       body: Center(
@@ -158,11 +144,7 @@ class _InvestorPlaceholderPage extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                icon,
-                size: 54.w(context),
-                color: context.primary,
-              ),
+              Icon(icon, size: 54.w(context), color: context.primary),
               SizedBox(height: 16.h(context)),
               Text(
                 title,

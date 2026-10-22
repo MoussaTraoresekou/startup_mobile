@@ -3,6 +3,7 @@ import 'package:startup_mobile/cor/theme/app_theme.dart';
 import 'package:startup_mobile/cor/utils/size_config.dart';
 import 'package:startup_mobile/models/ProjetModel .dart';
 import 'package:startup_mobile/pages/Investisseur/pitch_utils.dart';
+import 'package:startup_mobile/pages/Investisseur/pith_cover.dart';
 
 class InvestorProjectCard extends StatelessWidget {
   const InvestorProjectCard({
@@ -20,123 +21,128 @@ class InvestorProjectCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final estVideo = pitchTypeOf(project.pithUrl) == PitchType.video;
+    final type = pitchTypeOf(project.pithUrl);
+    final radius = BorderRadius.circular(14);
 
-    return Material(
-      color: context.background,
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: context.borderColor),
-          ),
+    return Container(
+      decoration: BoxDecoration(
+        color: context.background,
+        borderRadius: radius,
+        border: Border.all(color: context.borderColor),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: radius,
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: context.primarySoft,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Icon(
-                      estVideo
-                          ? Icons.play_circle_outline_rounded
-                          : Icons.picture_as_pdf_outlined,
-                      color: context.primary,
-                      size: 26,
-                    ),
+              // ---- Visuel du pitch ------------------------------------------
+              AspectRatio(
+                aspectRatio: 16 / 9,
+                child: PitchCover(
+                  type: type,
+                  // Quand ProjetModel aura un champ miniature, passez-le ici :
+                  // thumbnailUrl: project.thumbnailUrl,
+                  child: Positioned(
+                    top: 8,
+                    right: 8,
+                    child: _boutonCoeur(context),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                ),
+              ),
+
+              // ---- Informations ---------------------------------------------
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      project.titre,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.titleTextStyle.copyWith(
+                        fontSize: 17.sp(context),
+                        fontWeight: FontWeight.bold,
+                        height: 1.25,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${project.secteur} • ${project.porteurNomComplet}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.normalTextStyle.copyWith(
+                        fontSize: 12.sp(context),
+                        color: context.textMuted,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      project.description,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.normalTextStyle.copyWith(
+                        fontSize: 13.sp(context),
+                        height: 1.4,
+                        color: context.textMuted,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Divider(height: 1, color: context.borderColor),
+                    const SizedBox(height: 10),
+                    Row(
                       children: [
                         Text(
-                          project.titre,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: context.titleTextStyle.copyWith(
-                            fontSize: 16.sp(context),
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          '${project.secteur} • ${project.porteurNomComplet}',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                          'Quota proposé',
                           style: context.normalTextStyle.copyWith(
                             fontSize: 12.sp(context),
                             color: context.textMuted,
                           ),
                         ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            project.quotaPropose,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.end,
+                            style: context.normalTextStyle.copyWith(
+                              fontSize: 13.sp(context),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
                       ],
                     ),
-                  ),
-                  IconButton(
-                    onPressed: onLikePressed,
-                    visualDensity: VisualDensity.compact,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(
-                      minWidth: 36,
-                      minHeight: 36,
-                    ),
-                    icon: Icon(
-                      isLiked ? Icons.favorite : Icons.favorite_border,
-                      color: isLiked ? context.badgeRed : context.textMuted,
-                      size: 22,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Text(
-                project.description,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: context.normalTextStyle.copyWith(
-                  fontSize: 13.sp(context),
-                  height: 1.4,
-                  color: context.textMuted,
+                  ],
                 ),
               ),
-              const SizedBox(height: 12),
-              Divider(height: 1, color: context.borderColor),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  Text(
-                    'Quota proposé',
-                    style: context.normalTextStyle.copyWith(
-                      fontSize: 12.sp(context),
-                      color: context.textMuted,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      project.quotaPropose,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.end,
-                      style: context.normalTextStyle.copyWith(
-                        fontSize: 13.sp(context),
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Cœur blanc posé sur le visuel (lisible sur fond sombre comme clair).
+  Widget _boutonCoeur(BuildContext context) {
+    return Material(
+      color: Colors.white.withValues(alpha: 0.92),
+      shape: const CircleBorder(),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onLikePressed,
+        child: SizedBox(
+          width: 36,
+          height: 36,
+          child: Icon(
+            isLiked ? Icons.favorite : Icons.favorite_border,
+            size: 20,
+            color: isLiked ? context.badgeRed : const Color(0xFF6B7280),
           ),
         ),
       ),
