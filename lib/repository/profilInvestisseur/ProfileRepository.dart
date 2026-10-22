@@ -67,6 +67,28 @@ class ProfileRepository {
         return 'Une erreur est survenue lors de la communication avec le serveur.';
     }
   }
+  
+  /// TODO : remplacer cette URL par l'endpoint qui retourne
+  /// réellement les secteurs choisis par l'investisseur.
+  Future<List<Secteur>> getSecteursChoisis() async {
+    try {
+      const endpoint = '/api/investisseur/secteurs-choisis';
+
+      final response = await _dio.get(endpoint);
+      final data = response.data as List<dynamic>;
+
+      return data
+          .map(
+            (e) => Secteur.fromJson(
+              Map<String, dynamic>.from(e as Map),
+            ),
+          )
+          .toList();
+    } on DioException catch (e) {
+      throw Exception(_message(e));
+    }
+  }
+
 }
 
 final profileRepositoryProvider = Provider<ProfileRepository>((ref) {
@@ -76,3 +98,11 @@ final profileRepositoryProvider = Provider<ProfileRepository>((ref) {
 final secteursProvider = FutureProvider.autoDispose<List<Secteur>>((ref) {
   return ref.watch(profileRepositoryProvider).getSecteurs();
 });
+
+final secteursChoisisProvider =
+    FutureProvider.autoDispose<List<Secteur>>((ref) {
+  return ref
+      .watch(profileRepositoryProvider)
+      .getSecteursChoisis();
+});
+

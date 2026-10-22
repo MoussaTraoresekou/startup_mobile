@@ -20,7 +20,7 @@ final class MessagerieControllerProvider
         argument: null,
         retry: null,
         name: r'messagerieControllerProvider',
-        isAutoDispose: true,
+        isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
@@ -34,7 +34,7 @@ final class MessagerieControllerProvider
 }
 
 String _$messagerieControllerHash() =>
-    r'd30cff028877017af31b1ccd4c8c27094758a9d1';
+    r'9b4355bc31f2823b35cf0e6904f1c55a942338ce';
 
 abstract class _$MessagerieController extends $AsyncNotifier<void> {
   FutureOr<void> build();

@@ -10,6 +10,7 @@ import 'package:startup_mobile/pages/Investisseur/investisseurAcceuil.dart';
 import 'package:startup_mobile/pages/Investisseur/investor_project_detail_screen.dart';
 import 'package:startup_mobile/pages/Login/loginscreen.dart';
 import 'package:startup_mobile/pages/chat/private_chat_screen.dart';
+import 'package:startup_mobile/pages/navigation/investor_main_screen.dart';
 import 'package:startup_mobile/pages/register/registerScreen.dart';
 import 'package:startup_mobile/pages/secteur/secteurPourInv.dart';
 import 'package:startup_mobile/pages/splush/splushScreen.dart';
@@ -95,11 +96,11 @@ GoRouter appRouter(Ref ref) {
         name: AppRoutes.sectorsSelection.name,
         builder: (context, state) => const secteurPourInv(),
       ),
-      GoRoute(
-        path: '/investor-dashboard',
-        name: AppRoutes.investorDashboard.name,
-        builder: (context, state) => const InvestorDashboardScreen(),
-      ),
+     GoRoute(
+  path: '/investor-dashboard',
+  name: AppRoutes.investorDashboard.name,
+  builder: (context, state) => const InvestorMainScreen(),
+),
       GoRoute(
         name: AppRoutes.projetDetail.name,
         path: '/detailactive',

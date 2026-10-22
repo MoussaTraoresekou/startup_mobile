@@ -1,5 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:startup_mobile/cor/reseau/dio_provider.dart';
 import 'package:startup_mobile/cor/storage/token_storage.dart'; 
@@ -34,7 +36,7 @@ class AuthRepository {
       throw Exception(_getErrorMessage(e));
     }
   }
-  */
+  
   Future<LoginResponse> login(String email, String password) async {
   try {
     final response = await _dio.post(
@@ -60,6 +62,41 @@ class AuthRepository {
     throw Exception(_getErrorMessage(e));
   }
 }
+*/
+
+Future<LoginResponse> login(String email, String password) async {
+  try {
+    final response = await _dio.post(
+      '/api/user/login',
+      data: {
+        'email': email.trim().toLowerCase(),
+        'password': password,
+      },
+    );
+
+    final loginResponse = LoginResponse.fromJson(
+      Map<String, dynamic>.from(response.data as Map),
+    );
+
+    await _tokenStorage.saveToken(loginResponse.token);
+    await _tokenStorage.saveProfileStatus(
+      loginResponse.profileCompleted,
+    );
+    await _tokenStorage.saveUserId(loginResponse.id);
+
+    await _tokenStorage.saveUserProfile(
+      nom: loginResponse.nom,
+      prenom: loginResponse.prenom,
+      email: loginResponse.email,
+      role: loginResponse.role,
+    );
+
+    return loginResponse;
+  } on DioException catch (e) {
+    throw Exception(_getErrorMessage(e));
+  }
+}
+
 
   Future<void> register(InvestorRegisterDto dto) async {
     try {
@@ -121,3 +158,5 @@ AuthRepository authRepository(Ref ref) {
 
   return AuthRepository(dio, storageInstance);
 }
+
+final themeModeProvider =StateProvider<ThemeMode>((ref) => ThemeMode.system);

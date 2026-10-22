@@ -7,6 +7,7 @@ import 'package:startup_mobile/models/message_response_model.dart';
 import 'package:stomp_dart_client/stomp_dart_client.dart';
 import 'package:startup_mobile/cor/reseau/dio_provider.dart';
 import 'package:startup_mobile/cor/storage/token_storage.dart';
+import 'package:flutter/foundation.dart';
 
 part 'message_repository.g.dart';
 
@@ -160,6 +161,7 @@ Future<void> connecterConversation(int conversationId) async {
 
 
   /// Envoie un message au contrôleur WebSocket Spring Boot.
+  /*
   Future<void> envoyerMessage({
     required int conversationId,
     required String contenu,
@@ -183,6 +185,50 @@ Future<void> connecterConversation(int conversationId) async {
       body: jsonEncode({'contenu': texte}),
     );
   }
+  */
+  Future<void> envoyerMessage({
+  required int conversationId,
+  required String contenu,
+}) async {
+  final texte = contenu.trim();
+
+  if (texte.isEmpty) {
+    throw Exception('Le message ne peut pas être vide.');
+  }
+
+  final client = _client;
+
+  if (client == null ||
+      !_connecte ||
+      _conversationConnectee != conversationId) {
+    debugPrint('ENVOI IMPOSSIBLE : WebSocket non connecté.');
+    debugPrint('Conversation demandée : $conversationId');
+    debugPrint('Conversation connectée : $_conversationConnectee');
+    debugPrint('Client présent : ${client != null}');
+    debugPrint('STOMP connecté : $_connecte');
+
+    throw Exception(
+      'La messagerie n’est pas connectée. '
+      'Veuillez quitter puis rouvrir la conversation.',
+    );
+  }
+
+  try {
+    debugPrint('ENVOI STOMP : /app/conversations/$conversationId/envoyer');
+    debugPrint('CONTENU DU MESSAGE : $texte');
+
+    client.send(
+      destination: '/app/conversations/$conversationId/envoyer',
+      body: jsonEncode({'contenu': texte}),
+    );
+
+    debugPrint('TRAME STOMP ENVOYÉE.');
+  } catch (e, stackTrace) {
+    debugPrint('ERREUR ENVOI STOMP : $e');
+    debugPrint('$stackTrace');
+    rethrow;
+  }
+}
 
   /// Ferme la connexion WebSocket.
   void deconnecter() {
@@ -218,7 +264,7 @@ Future<void> connecterConversation(int conversationId) async {
   }
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 MessageRepository messageRepository(Ref ref) {
   final repository = MessageRepository(
     ref.watch(dioProvider),

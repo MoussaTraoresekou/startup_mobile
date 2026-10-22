@@ -26,7 +26,7 @@ final class MessageRepositoryProvider
         argument: null,
         retry: null,
         name: r'messageRepositoryProvider',
-        isAutoDispose: true,
+        isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
@@ -54,7 +54,7 @@ final class MessageRepositoryProvider
   }
 }
 
-String _$messageRepositoryHash() => r'd79cae7b977cd0e7f2cfdf160be94b7fb5c0ec3a';
+String _$messageRepositoryHash() => r'2e6d6e0f154de77f8fc101c497a5524ba49dcc38';
 
 /// Provider pour récupérer l'historique d'une conversation.
 

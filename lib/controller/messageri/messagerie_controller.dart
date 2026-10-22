@@ -1,4 +1,3 @@
-
 import 'dart:async';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -6,35 +5,41 @@ import 'package:startup_mobile/repository/message/message_repository.dart';
 
 part 'messagerie_controller.g.dart';
 
-@riverpod
+@Riverpod(keepAlive: true)
 class MessagerieController extends _$MessagerieController {
   @override
   FutureOr<void> build() {}
 
-  /// Action : connecter une conversation.
   Future<bool> connecter(int conversationId) async {
     if (state.isLoading) return false;
 
+    final repository = ref.read(messageRepositoryProvider);
     state = const AsyncLoading();
 
-    final result = await AsyncValue.guard(() async {
-      await ref
-          .read(messageRepositoryProvider)
-          .connecterConversation(conversationId);
-    });
+    try {
+      await repository.connecterConversation(conversationId);
 
-    state = result;
-    return !result.hasError;
+      if (!ref.mounted) return false;
+
+      state = const AsyncData(null);
+      return true;
+    } catch (e, stackTrace) {
+      if (!ref.mounted) return false;
+
+      state = AsyncError(e, stackTrace);
+      return false;
+    }
   }
 
-  /// Action : envoyer un message.
   Future<bool> envoyer({
     required int conversationId,
     required String contenu,
   }) async {
     if (state.isLoading) return false;
 
-    if (contenu.trim().isEmpty) {
+    final texte = contenu.trim();
+
+    if (texte.isEmpty) {
       state = AsyncError(
         'Le message ne peut pas être vide.',
         StackTrace.current,
@@ -42,30 +47,45 @@ class MessagerieController extends _$MessagerieController {
       return false;
     }
 
+    final repository = ref.read(messageRepositoryProvider);
     state = const AsyncLoading();
 
-    final result = await AsyncValue.guard(() async {
-      await ref.read(messageRepositoryProvider).envoyerMessage(
-            conversationId: conversationId,
-            contenu: contenu.trim(),
-          );
-    });
+    try {
+      await repository.envoyerMessage(
+        conversationId: conversationId,
+        contenu: texte,
+      );
 
-    state = result;
-    return !result.hasError;
+      if (!ref.mounted) return false;
+
+      state = const AsyncData(null);
+      return true;
+    } catch (e, stackTrace) {
+      if (!ref.mounted) return false;
+
+      state = AsyncError(e, stackTrace);
+      return false;
+    }
   }
 
-  /// Action : déconnecter la conversation.
   Future<bool> deconnecter() async {
     if (state.isLoading) return false;
 
+    final repository = ref.read(messageRepositoryProvider);
     state = const AsyncLoading();
 
-    final result = await AsyncValue.guard(() async {
-      ref.read(messageRepositoryProvider).deconnecter();
-    });
+    try {
+      repository.deconnecter();
 
-    state = result;
-    return !result.hasError;
+      if (!ref.mounted) return false;
+
+      state = const AsyncData(null);
+      return true;
+    } catch (e, stackTrace) {
+      if (!ref.mounted) return false;
+
+      state = AsyncError(e, stackTrace);
+      return false;
+    }
   }
 }
