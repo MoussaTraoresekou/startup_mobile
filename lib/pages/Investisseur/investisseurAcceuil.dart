@@ -29,6 +29,8 @@ class _InvestorDashboardScreenState
   String? _selectedSector;
   String _query = '';
 
+  final Set<int> _likesEnCours = {};
+
   @override
   void initState() {
     super.initState();
@@ -58,9 +60,16 @@ class _InvestorDashboardScreenState
     }).toList();
   }
 
-  Future<void> _toggleLike(int id) async {
+  Future<void> _toggleLike(ProjetModel project) async {
+    final id = project.id;
+
+    if (_likesEnCours.contains(id)) return;
+
+    setState(() => _likesEnCours.add(id));
+
     try {
       await ref.read(likesProvider.notifier).basculer(id);
+      // Le compteur et le cœur sont actualisés par les providers partagés.
     } catch (_) {
       if (!mounted) return;
 
@@ -72,6 +81,10 @@ class _InvestorDashboardScreenState
             behavior: SnackBarBehavior.floating,
           ),
         );
+    } finally {
+      if (mounted) {
+        setState(() => _likesEnCours.remove(id));
+      }
     }
   }
 
@@ -79,7 +92,9 @@ class _InvestorDashboardScreenState
   Widget build(BuildContext context) {
     final projectsAsync = ref.watch(fluxProjetsProvider);
     final sectorsAsync = ref.watch(secteursProvider);
+
     final likes = ref.watch(likesProvider).value ?? <int>{};
+    final compteursLikes = ref.watch(likeCountsProvider);
 
     return Scaffold(
       backgroundColor: context.bgColor,
@@ -184,12 +199,19 @@ class _InvestorDashboardScreenState
                         itemBuilder: (context, index) {
                           final project = filtered[index];
 
+                          final totalLikes =
+                              compteursLikes[project.id] ??
+                                  project.nombreLikes;
+
                           return InvestorProjectCard(
                             project: project,
                             isLiked: likes.contains(project.id),
-                            onLikePressed: () => _toggleLike(project.id),
-                            onTap: () {
-                              Navigator.of(context).push(
+                            nombreLikes: totalLikes,
+                            onLikePressed: _likesEnCours.contains(project.id)
+                                ? () {}
+                                : () => _toggleLike(project),
+                            onTap: () async {
+                              await Navigator.of(context).push(
                                 MaterialPageRoute(
                                   builder: (context) =>
                                       InvestorProjectDetailScreen(
@@ -212,7 +234,6 @@ class _InvestorDashboardScreenState
     );
   }
 
-  // En-tête : logo, nom de l'utilisateur connecté et notifications.
   Widget _buildHeader(BuildContext context) {
     return Row(
       children: [
@@ -231,7 +252,6 @@ class _InvestorDashboardScreenState
 
               final prenom = (profil['prenom'] ?? '').trim();
               final nom = (profil['nom'] ?? '').trim();
-
               final nomComplet = '$prenom $nom'.trim();
 
               return Column(
@@ -320,20 +340,14 @@ class _InvestorDashboardScreenState
           fontSize: 14.sp(context),
           color: context.textMuted,
         ),
-        prefixIcon: Icon(
-          Icons.search,
-          color: context.textMuted,
-        ),
+        prefixIcon: Icon(Icons.search, color: context.textMuted),
         suffixIcon: _query.isNotEmpty
             ? IconButton(
                 onPressed: () {
                   _searchController.clear();
                   setState(() => _query = '');
                 },
-                icon: Icon(
-                  Icons.close,
-                  color: context.textMuted,
-                ),
+                icon: Icon(Icons.close, color: context.textMuted),
               )
             : null,
         filled: true,
@@ -379,7 +393,6 @@ class _InvestorDashboardScreenState
   }
 }
 
-// Widget commun pour afficher les erreurs et les listes vides.
 class _Message extends StatelessWidget {
   const _Message({
     required this.icon,
@@ -401,11 +414,7 @@ class _Message extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              size: 44,
-              color: context.textMuted,
-            ),
+            Icon(icon, size: 44, color: context.textMuted),
             const SizedBox(height: 12),
             Text(
               text,

@@ -48,12 +48,16 @@ final class LikeRepositoryProvider
   }
 }
 
-String _$likeRepositoryHash() => r'1d7c9dfb25f58dff9458599c6bed9cf535a18f1c';
+String _$likeRepositoryHash() => r'75233f9ae3c68442a829815bb9429cba9cdea7ac';
+
+/// État partagé des projets aimés par l'investisseur.
 
 @ProviderFor(Likes)
 final likesProvider = LikesProvider._();
 
+/// État partagé des projets aimés par l'investisseur.
 final class LikesProvider extends $AsyncNotifierProvider<Likes, Set<int>> {
+  /// État partagé des projets aimés par l'investisseur.
   LikesProvider._()
     : super(
         from: null,
@@ -73,7 +77,9 @@ final class LikesProvider extends $AsyncNotifierProvider<Likes, Set<int>> {
   Likes create() => Likes();
 }
 
-String _$likesHash() => r'a290bfc954252cefb155d4c09529571bd894dab4';
+String _$likesHash() => r'07a8d76cd997a42a4ad8d24cb27238a25e7ffd4b';
+
+/// État partagé des projets aimés par l'investisseur.
 
 abstract class _$Likes extends $AsyncNotifier<Set<int>> {
   FutureOr<Set<int>> build();
@@ -86,6 +92,64 @@ abstract class _$Likes extends $AsyncNotifier<Set<int>> {
             as $ClassProviderElement<
               AnyNotifier<AsyncValue<Set<int>>, Set<int>>,
               AsyncValue<Set<int>>,
+              Object?,
+              Object?
+            >;
+    return element.handleCreate(ref, build);
+  }
+}
+
+/// Source de vérité commune pour les compteurs de likes.
+
+@ProviderFor(LikeCounts)
+final likeCountsProvider = LikeCountsProvider._();
+
+/// Source de vérité commune pour les compteurs de likes.
+final class LikeCountsProvider
+    extends $NotifierProvider<LikeCounts, Map<int, int>> {
+  /// Source de vérité commune pour les compteurs de likes.
+  LikeCountsProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'likeCountsProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$likeCountsHash();
+
+  @$internal
+  @override
+  LikeCounts create() => LikeCounts();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(Map<int, int> value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<Map<int, int>>(value),
+    );
+  }
+}
+
+String _$likeCountsHash() => r'c1064dc9c68bfc584368a46e784a7f38df22fae0';
+
+/// Source de vérité commune pour les compteurs de likes.
+
+abstract class _$LikeCounts extends $Notifier<Map<int, int>> {
+  Map<int, int> build();
+  @$mustCallSuper
+  @override
+  WhenComplete runBuild() {
+    final ref = this.ref as $Ref<Map<int, int>, Map<int, int>>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<Map<int, int>, Map<int, int>>,
+              Map<int, int>,
               Object?,
               Object?
             >;

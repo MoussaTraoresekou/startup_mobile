@@ -4,7 +4,6 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:startup_mobile/cor/theme/app_theme.dart';
 import 'package:startup_mobile/cor/utils/size_config.dart';
 
-
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -17,21 +16,11 @@ class _SplashScreenState extends State<SplashScreen>
   static const String _logoAsset = 'assets/images/onboarding/logo_startup.png';
   static const String _appName = 'Entrepreneur360';
   static const String _slogan = 'Repérez, échangez, investissez.';
-  static const Duration _minSplashDuration = Duration(milliseconds: 2000);
+  static const Duration _minSplashDuration = Duration(milliseconds: 2200);
 
   late final AnimationController _controller;
-
-  late final Animation<double> _logoFadeAnimation;
-  late final Animation<double> _logoScaleAnimation;
-  late final Animation<Offset> _logoSlideAnimation;
-
-  late final Animation<double> _titleFadeAnimation;
-  late final Animation<Offset> _titleSlideAnimation;
-
-  late final Animation<double> _subtitleFadeAnimation;
-  late final Animation<Offset> _subtitleSlideAnimation;
-
-  late final Animation<double> _loaderFadeAnimation;
+  late final Animation<Offset> _logoSlide;
+  late final Animation<double> _texteFade;
 
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
 
@@ -44,69 +33,21 @@ class _SplashScreenState extends State<SplashScreen>
       duration: _minSplashDuration,
     );
 
-    _logoFadeAnimation = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.0, 0.35, curve: Curves.easeIn),
-      ),
-    );
-
-    _logoScaleAnimation = Tween<double>(begin: 0.82, end: 1).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.0, 0.60, curve: Curves.easeOutCubic),
-      ),
-    );
-
-    _logoSlideAnimation = Tween<Offset>(
-      begin: const Offset(0, -0.20),
+    // Le logo tombe du haut de l'écran jusqu'à sa place.
+    _logoSlide = Tween<Offset>(
+      begin: const Offset(0, -4),
       end: Offset.zero,
     ).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: const Interval(0.0, 0.60, curve: Curves.easeOutCubic),
+        curve: const Interval(0.0, 0.6, curve: Curves.bounceOut),
       ),
     );
 
-    _titleFadeAnimation = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.30, 0.65, curve: Curves.easeIn),
-      ),
-    );
-
-    _titleSlideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.20),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.30, 0.70, curve: Curves.easeOutCubic),
-      ),
-    );
-
-    _subtitleFadeAnimation = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.55, 0.85, curve: Curves.easeIn),
-      ),
-    );
-
-    _subtitleSlideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.15),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.55, 0.90, curve: Curves.easeOutCubic),
-      ),
-    );
-
-    _loaderFadeAnimation = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.75, 1.0, curve: Curves.easeIn),
-      ),
+    // Le texte apparaît ensuite.
+    _texteFade = CurvedAnimation(
+      parent: _controller,
+      curve: const Interval(0.6, 1.0, curve: Curves.easeIn),
     );
 
     _controller.forward();
@@ -160,69 +101,48 @@ class _SplashScreenState extends State<SplashScreen>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                FadeTransition(
-                  opacity: _logoFadeAnimation,
-                  child: SlideTransition(
-                    position: _logoSlideAnimation,
-                    child: ScaleTransition(
-                      scale: _logoScaleAnimation,
-                      child: Image.asset(
-                        _logoAsset,
-                        width: 160.w(context),
-                        height: 160.w(context),
-                        fit: BoxFit.contain,
-                        semanticLabel: 'Logo $_appName',
-                      ),
-                    ),
+                SlideTransition(
+                  position: _logoSlide,
+                  child: Image.asset(
+                    _logoAsset,
+                    width: 150,
+                    height: 150,
+                    fit: BoxFit.contain,
                   ),
                 ),
-                SizedBox(height: 24.h(context)),
+                const SizedBox(height: 24),
                 FadeTransition(
-                  opacity: _titleFadeAnimation,
-                  child: SlideTransition(
-                    position: _titleSlideAnimation,
-                    child: Text(
-                      _appName,
-                      textAlign: TextAlign.center,
-                      style: context.headingTextStyle.copyWith(
-                        fontSize: 28.w(context),
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.3,
-                        color: context.primary,
+                  opacity: _texteFade,
+                  child: Column(
+                    children: [
+                      Text(
+                        _appName,
+                        textAlign: TextAlign.center,
+                        style: context.headingTextStyle.copyWith(
+                          fontSize: 28.sp(context),
+                          fontWeight: FontWeight.w800,
+                          color: context.primary,
+                        ),
                       ),
-                    ),
-                  ),
-                ),
-                SizedBox(height: 12.h(context)),
-                FadeTransition(
-                  opacity: _subtitleFadeAnimation,
-                  child: SlideTransition(
-                    position: _subtitleSlideAnimation,
-                    child: Text(
-                      _slogan,
-                      textAlign: TextAlign.center,
-                      style: context.normalTextStyle.copyWith(
-                        fontSize: 15.w(context),
-                        fontWeight: FontWeight.w500,
-                        letterSpacing: 0.4,
-                        height: 1.5,
-                        color: context.textMuted,
+                      const SizedBox(height: 10),
+                      Text(
+                        _slogan,
+                        textAlign: TextAlign.center,
+                        style: context.normalTextStyle.copyWith(
+                          fontSize: 15.sp(context),
+                          color: context.textMuted,
+                        ),
                       ),
-                    ),
-                  ),
-                ),
-                SizedBox(height: 40.h(context)),
-                FadeTransition(
-                  opacity: _loaderFadeAnimation,
-                  child: SizedBox(
-                    width: 26.w(context),
-                    height: 26.w(context),
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.5,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        context.primary,
+                      const SizedBox(height: 36),
+                      SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.5,
+                          color: context.primary,
+                        ),
                       ),
-                    ),
+                    ],
                   ),
                 ),
               ],

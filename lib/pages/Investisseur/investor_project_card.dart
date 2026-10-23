@@ -12,6 +12,7 @@ class InvestorProjectCard extends StatelessWidget {
     required this.onTap,
     required this.isLiked,
     required this.onLikePressed,
+    this.nombreLikes,
   });
 
   final ProjetModel project;
@@ -19,10 +20,16 @@ class InvestorProjectCard extends StatelessWidget {
   final bool isLiked;
   final VoidCallback onLikePressed;
 
+  /// Nombre de likes actualisé transmis par la page parente.
+  /// Si aucune valeur n'est fournie, on utilise celle du modèle.
+  final int? nombreLikes;
+
   @override
   Widget build(BuildContext context) {
     final type = pitchTypeOf(project.pithUrl);
     final radius = BorderRadius.circular(14);
+
+    final totalLikes = nombreLikes ?? project.nombreLikes;
 
     return Container(
       decoration: BoxDecoration(
@@ -39,13 +46,10 @@ class InvestorProjectCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ---- Visuel du pitch ------------------------------------------
               AspectRatio(
                 aspectRatio: 16 / 9,
                 child: PitchCover(
                   type: type,
-                  // Quand ProjetModel aura un champ miniature, passez-le ici :
-                  // thumbnailUrl: project.thumbnailUrl,
                   child: Positioned(
                     top: 8,
                     right: 8,
@@ -54,7 +58,6 @@ class InvestorProjectCard extends StatelessWidget {
                 ),
               ),
 
-              // ---- Informations ---------------------------------------------
               Padding(
                 padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
                 child: Column(
@@ -70,7 +73,9 @@ class InvestorProjectCard extends StatelessWidget {
                         height: 1.25,
                       ),
                     ),
+
                     const SizedBox(height: 4),
+
                     Text(
                       '${project.secteur} • ${project.porteurNomComplet}',
                       maxLines: 1,
@@ -80,7 +85,9 @@ class InvestorProjectCard extends StatelessWidget {
                         color: context.textMuted,
                       ),
                     ),
+
                     const SizedBox(height: 8),
+
                     Text(
                       project.description,
                       maxLines: 2,
@@ -91,9 +98,16 @@ class InvestorProjectCard extends StatelessWidget {
                         color: context.textMuted,
                       ),
                     ),
+
                     const SizedBox(height: 12),
-                    Divider(height: 1, color: context.borderColor),
+
+                    Divider(
+                      height: 1,
+                      color: context.borderColor,
+                    ),
+
                     const SizedBox(height: 10),
+
                     Row(
                       children: [
                         Text(
@@ -103,7 +117,9 @@ class InvestorProjectCard extends StatelessWidget {
                             color: context.textMuted,
                           ),
                         ),
+
                         const SizedBox(width: 12),
+
                         Expanded(
                           child: Text(
                             project.quotaPropose,
@@ -118,6 +134,29 @@ class InvestorProjectCard extends StatelessWidget {
                         ),
                       ],
                     ),
+
+                    const SizedBox(height: 10),
+
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.favorite,
+                          size: 16,
+                          color: context.badgeRed,
+                        ),
+
+                        const SizedBox(width: 6),
+
+                        Text(
+                          '$totalLikes '
+                          '${totalLikes > 1 ? 'likes' : 'like'}',
+                          style: context.normalTextStyle.copyWith(
+                            fontSize: 12.sp(context),
+                            color: context.textMuted,
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -128,7 +167,6 @@ class InvestorProjectCard extends StatelessWidget {
     );
   }
 
-  /// Cœur blanc posé sur le visuel (lisible sur fond sombre comme clair).
   Widget _boutonCoeur(BuildContext context) {
     return Material(
       color: Colors.white.withValues(alpha: 0.92),
@@ -142,7 +180,9 @@ class InvestorProjectCard extends StatelessWidget {
           child: Icon(
             isLiked ? Icons.favorite : Icons.favorite_border,
             size: 20,
-            color: isLiked ? context.badgeRed : const Color(0xFF6B7280),
+            color: isLiked
+                ? context.badgeRed
+                : const Color(0xFF6B7280),
           ),
         ),
       ),

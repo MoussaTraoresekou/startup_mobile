@@ -1,3 +1,4 @@
+
 import 'package:chewie/chewie.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -35,24 +36,14 @@ class _InvestorProjectDetailScreenState
     extends ConsumerState<InvestorProjectDetailScreen> {
   VideoPlayerController? _videoController;
   ChewieController? _chewieController;
-  bool _contactEnCours = false;
 
-  // La vidéo n'est chargée que lorsque l'utilisateur appuie sur lecture :
-  // avant cela, on affiche le visuel du pitch (au lieu d'un fond noir).
+  bool _contactEnCours = false;
   bool _lectureDemandee = false;
   bool _erreurVideo = false;
-
-  @override
-  void dispose() {
-    _libererVideo();
-    super.dispose();
-  }
-
-  // ---------------------------------------------------------------------------
-  // PITCH
-  // ---------------------------------------------------------------------------
+  bool _likeEnCours = false;
 
   String get _pitchUrl => widget.projet.pithUrl.trim();
+
   PitchType get _type => pitchTypeOf(_pitchUrl);
 
   Future<void> _lancerVideo() async {
@@ -70,7 +61,9 @@ class _InvestorProjectDetailScreenState
     if (_type != PitchType.video) return;
 
     try {
-      final controller = VideoPlayerController.networkUrl(Uri.parse(_pitchUrl));
+      final controller =
+          VideoPlayerController.networkUrl(Uri.parse(_pitchUrl));
+
       _videoController = controller;
       await controller.initialize();
 
@@ -95,13 +88,17 @@ class _InvestorProjectDetailScreenState
       setState(() => _chewieController = chewie);
     } catch (e) {
       debugPrint('Erreur de chargement du pitch : $e');
-      if (mounted) setState(() => _erreurVideo = true);
+
+      if (mounted) {
+        setState(() => _erreurVideo = true);
+      }
     }
   }
 
   void _libererVideo() {
     _chewieController?.dispose();
     _chewieController = null;
+
     _videoController?.dispose();
     _videoController = null;
   }
@@ -115,27 +112,39 @@ class _InvestorProjectDetailScreenState
     }
 
     try {
-      final ouvert = await launchUrl(uri, mode: LaunchMode.externalApplication);
-      if (!ouvert) _afficherMessage('Impossible d’ouvrir le document PDF.');
+      final ouvert = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
+
+      if (!ouvert) {
+        _afficherMessage('Impossible d’ouvrir le document PDF.');
+      }
     } catch (_) {
       _afficherMessage('Erreur lors de l’ouverture du PDF.');
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // ACTIONS
-  // ---------------------------------------------------------------------------
-
   Future<void> _basculerLike() async {
+    if (_likeEnCours) return;
+
+    setState(() => _likeEnCours = true);
+
     try {
+      // Le notifier actualise le cœur ET le compteur partagé.
       await ref.read(likesProvider.notifier).basculer(widget.projet.id);
     } catch (_) {
-      _afficherMessage('Impossible de mettre à jour le like.');
+      if (mounted) {
+        _afficherMessage('Impossible de mettre à jour le like.');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _likeEnCours = false);
+      }
     }
   }
 
   Future<void> _contacterPorteur() async {
-    // Conserver le comportement existant si un callback externe est fourni.
     if (widget.onContactPressed != null) {
       widget.onContactPressed!.call();
       return;
@@ -146,7 +155,6 @@ class _InvestorProjectDetailScreenState
     setState(() => _contactEnCours = true);
 
     try {
-      // 1. Ouvrir ou récupérer la conversation avec le porteur.
       final conversation = await ref
           .read(conversationControllerProvider.notifier)
           .ouvrirConversation(widget.projet.id);
@@ -162,14 +170,12 @@ class _InvestorProjectDetailScreenState
 
       debugPrint('CONVERSATION REÇUE : ${conversation.id}');
 
-      // 2. Établir la connexion WebSocket.
       final connecte = await ref
           .read(messagerieControllerProvider.notifier)
           .connecter(conversation.id);
 
       if (!mounted) return;
 
-      // 3. Ne pas ouvrir l'écran si la connexion a échoué.
       if (!connecte) {
         _afficherMessage(
           'Impossible de connecter la messagerie. Réessayez.',
@@ -179,7 +185,6 @@ class _InvestorProjectDetailScreenState
 
       debugPrint('CONNEXION MESSAGERIE RÉUSSIE');
 
-      // 4. Ouvrir l'écran de discussion.
       await context.push('/conversation', extra: conversation);
     } catch (e, stackTrace) {
       debugPrint('ERREUR OUVERTURE MESSAGERIE : $e');
@@ -209,7 +214,9 @@ class _InvestorProjectDetailScreenState
       ),
     );
 
-    if (envoye == true) _afficherMessage('Votre avis a été envoyé.');
+    if (envoye == true) {
+      _afficherMessage('Votre avis a été envoyé.');
+    }
   }
 
   void _afficherMessage(String message) {
@@ -218,20 +225,32 @@ class _InvestorProjectDetailScreenState
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
-        SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+        SnackBar(
+          content: Text(message),
+          behavior: SnackBarBehavior.floating,
+        ),
       );
   }
 
-  // ---------------------------------------------------------------------------
-  // PAGE
-  // ---------------------------------------------------------------------------
+  @override
+  void dispose() {
+    _libererVideo();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final projet = widget.projet;
     final description = projet.description.trim();
-    final isLiked =
-        ref.watch(likesProvider).value?.contains(projet.id) ?? false;
+
+    // Le cœur utilise le même état que le tableau de bord.
+    final likes = ref.watch(likesProvider).value ?? <int>{};
+    final isLiked = likes.contains(projet.id);
+
+    // Le compteur provient du notifier partagé.
+    final compteursLikes = ref.watch(likeCountsProvider);
+    final nombreLikes =
+        compteursLikes[projet.id] ?? projet.nombreLikes;
 
     return Scaffold(
       backgroundColor: context.bgColor,
@@ -243,15 +262,26 @@ class _InvestorProjectDetailScreenState
         centerTitle: true,
         title: Text(
           'Détail du projet',
-          style: context.titleTextStyle.copyWith(fontSize: 17.sp(context)),
+          style: context.titleTextStyle.copyWith(
+            fontSize: 17.sp(context),
+          ),
         ),
         actions: [
           IconButton(
-            onPressed: _basculerLike,
-            icon: Icon(
-              isLiked ? Icons.favorite : Icons.favorite_border,
-              color: isLiked ? context.badgeRed : context.textDark,
-            ),
+            onPressed: _likeEnCours ? null : _basculerLike,
+            icon: _likeEnCours
+                ? SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: context.primary,
+                    ),
+                  )
+                : Icon(
+                    isLiked ? Icons.favorite : Icons.favorite_border,
+                    color: isLiked ? context.badgeRed : context.textDark,
+                  ),
           ),
         ],
       ),
@@ -278,7 +308,7 @@ class _InvestorProjectDetailScreenState
                     ),
                   ),
                   const SizedBox(height: 14),
-                  _construireInfos(),
+                  _construireInfos(nombreLikes),
                   const SizedBox(height: 22),
                   Text(
                     'À propos du projet',
@@ -343,10 +373,6 @@ class _InvestorProjectDetailScreenState
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // PITCH : vidéo, PDF ou indisponible
-  // ---------------------------------------------------------------------------
-
   Widget _construireContenuPitch() {
     switch (_type) {
       case PitchType.video:
@@ -357,7 +383,6 @@ class _InvestorProjectDetailScreenState
           );
         }
 
-        // La vidéo est prête : lecteur.
         if (_chewieController != null) {
           return Container(
             color: Colors.black,
@@ -365,7 +390,6 @@ class _InvestorProjectDetailScreenState
           );
         }
 
-        // Chargement après l'appui sur lecture.
         if (_lectureDemandee) {
           return const PitchCover(
             type: PitchType.video,
@@ -377,7 +401,6 @@ class _InvestorProjectDetailScreenState
           );
         }
 
-        // État initial : visuel du pitch avec bouton lecture.
         return Stack(
           fit: StackFit.expand,
           children: [
@@ -474,11 +497,7 @@ class _InvestorProjectDetailScreenState
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // INFORMATIONS : secteur, porteur, quota
-  // ---------------------------------------------------------------------------
-
-  Widget _construireInfos() {
+  Widget _construireInfos(int nombreLikes) {
     final projet = widget.projet;
 
     return Container(
@@ -507,6 +526,12 @@ class _InvestorProjectDetailScreenState
             Icons.account_balance_wallet_outlined,
             'Quota proposé',
             projet.quotaPropose,
+          ),
+          Divider(height: 1, color: context.borderColor),
+          _ligneInfo(
+            Icons.favorite_outline,
+            'Nombre de likes',
+            '$nombreLikes',
           ),
         ],
       ),
@@ -544,10 +569,6 @@ class _InvestorProjectDetailScreenState
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // BARRE DE CONTACT (seul bouton orange de l'écran)
-  // ---------------------------------------------------------------------------
-
   Widget _construireBarreContact() {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
@@ -582,12 +603,11 @@ class _InvestorProjectDetailScreenState
   }
 }
 
-// =============================================================================
-// FORMULAIRE D'AVIS (le contrôleur de texte est géré à l'intérieur)
-// =============================================================================
-
 class _AvisSheet extends StatefulWidget {
-  const _AvisSheet({required this.titre, required this.onSubmit});
+  const _AvisSheet({
+    required this.titre,
+    required this.onSubmit,
+  });
 
   final String titre;
   final Future<void> Function(String commentaire)? onSubmit;
@@ -598,6 +618,7 @@ class _AvisSheet extends StatefulWidget {
 
 class _AvisSheetState extends State<_AvisSheet> {
   final TextEditingController _controller = TextEditingController();
+
   bool _envoiEnCours = false;
   String? _erreur;
 
@@ -616,6 +637,7 @@ class _AvisSheetState extends State<_AvisSheet> {
     }
 
     final callback = widget.onSubmit;
+
     if (callback == null) {
       setState(() => _erreur = 'L’envoi des avis n’est pas encore relié.');
       return;
@@ -628,10 +650,12 @@ class _AvisSheetState extends State<_AvisSheet> {
 
     try {
       await callback(commentaire);
+
       if (!mounted) return;
       Navigator.of(context).pop(true);
     } catch (_) {
       if (!mounted) return;
+
       setState(() {
         _envoiEnCours = false;
         _erreur = 'Impossible d’envoyer votre avis. Réessayez.';
@@ -648,11 +672,15 @@ class _AvisSheetState extends State<_AvisSheet> {
         );
 
     return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
       child: Container(
         decoration: BoxDecoration(
           color: context.background,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(20),
+          ),
         ),
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
@@ -693,7 +721,9 @@ class _AvisSheetState extends State<_AvisSheet> {
                 textCapitalization: TextCapitalization.sentences,
                 style: context.normalTextStyle.copyWith(fontSize: 15),
                 onChanged: (_) {
-                  if (_erreur != null) setState(() => _erreur = null);
+                  if (_erreur != null) {
+                    setState(() => _erreur = null);
+                  }
                 },
                 decoration: InputDecoration(
                   hintText: 'Écrivez votre commentaire...',
