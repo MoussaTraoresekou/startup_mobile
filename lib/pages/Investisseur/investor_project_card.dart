@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'package:startup_mobile/cor/theme/app_theme.dart';
 import 'package:startup_mobile/cor/utils/size_config.dart';
@@ -28,7 +29,6 @@ class InvestorProjectCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final type = pitchTypeOf(project.pithUrl);
     final radius = BorderRadius.circular(14);
-
     final totalLikes = nombreLikes ?? project.nombreLikes;
 
     return Container(
@@ -46,10 +46,12 @@ class InvestorProjectCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Miniature du pitch avec bouton lecture et bouton like.
               AspectRatio(
                 aspectRatio: 16 / 9,
                 child: PitchCover(
                   type: type,
+                  thumbnailUrl: project.pithThumbnailUrl,
                   child: Positioned(
                     top: 8,
                     right: 8,

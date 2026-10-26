@@ -10,6 +10,12 @@ class ProjetModel {
   final DateTime dateCreation;
   final int nombreLikes;
 
+  // Miniature du pitch vidéo
+  final String? pithThumbnailUrl;
+
+  // Type du pitch : VIDEO ou PDF
+  final String? pithType;
+
   ProjetModel({
     required this.id,
     required this.titre,
@@ -20,11 +26,13 @@ class ProjetModel {
     required this.porteurNomComplet,
     required this.dateCreation,
     this.nombreLikes = 0,
+    this.pithThumbnailUrl,
+    this.pithType,
   });
 
   factory ProjetModel.fromJson(Map<String, dynamic> json) {
     return ProjetModel(
-      id: json['id'] as int,
+      id: (json['id'] as num?)?.toInt() ?? 0,
       titre: json['titre'] as String? ?? '',
       description: json['description'] as String? ?? '',
       pithUrl: json['pith_url'] as String? ?? '',
@@ -36,6 +44,9 @@ class ProjetModel {
           ? DateTime.parse(json['date_creation'] as String)
           : DateTime.now(),
       nombreLikes: (json['nombreLikes'] as num?)?.toInt() ?? 0,
+      pithThumbnailUrl:
+          json['pith_thumbnail_url'] as String?,
+      pithType: json['pith_type'] as String?,
     );
   }
 
@@ -48,8 +59,11 @@ class ProjetModel {
       'quota_propose': quotaPropose,
       'secteur': secteur,
       'porteurNomComplet': porteurNomComplet,
-      'date_creation': dateCreation.toIso8601String().split('T')[0],
+      'date_creation':
+          dateCreation.toIso8601String().split('T')[0],
       'nombreLikes': nombreLikes,
+      'pith_thumbnail_url': pithThumbnailUrl,
+      'pith_type': pithType,
     };
   }
 }
