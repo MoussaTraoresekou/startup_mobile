@@ -19,6 +19,8 @@ import 'package:startup_mobile/pages/Investisseur/pitch_utils.dart';
 import 'package:startup_mobile/pages/pith_thumnail/pitch_video_url_stub.dart'
     if (dart.library.js_interop)
         'package:startup_mobile/pages/Investisseur/pitch_video_url_web.dart'
+    if (dart.library.io)
+        'package:startup_mobile/pages/pith_thumnail/pitch_video_url_io.dart'
     as video_url;
 
 import 'package:startup_mobile/pages/pith_thumnail/pitch_pdf_open_stub.dart'
@@ -27,7 +29,7 @@ import 'package:startup_mobile/pages/pith_thumnail/pitch_pdf_open_stub.dart'
     as pdf_open;
 
 
-import 'package:startup_mobile/pages/pith_thumnail/pitch_pdf_open_web.dart'
+import 'package:startup_mobile/pages/pith_thumnail/pitch_pdf_open_stub.dart'
     if (dart.library.js_interop)
         'package:startup_mobile/pages/pith_thumnail/pitch_pdf_open_web.dart'
     as pdf_web;
@@ -126,7 +128,8 @@ class _InvestorProjectDetailScreenState
 
       _urlVideoTemporaire = url;
 
-      controller = VideoPlayerController.networkUrl(Uri.parse(url));
+      //controller = VideoPlayerController.networkUrl(Uri.parse(url));
+       controller = video_url.creerControleurVideo(url);
       _videoController = controller;
 
       await controller.initialize();
@@ -226,6 +229,7 @@ class _InvestorProjectDetailScreenState
 
       if (kIsWeb) {
         await pdf_web.ouvrirPdfWeb(donnees);
+        
       } else {
         await pdf_open.ouvrirPdfNatif(
           donnees,
@@ -712,7 +716,7 @@ class _InvestorProjectDetailScreenState
           Divider(height: 1, color: context.borderColor),
           _ligneInfo(
             Icons.account_balance_wallet_outlined,
-            'Quota proposé',
+            'Quota ',
             projet.quotaPropose,
           ),
           Divider(height: 1, color: context.borderColor),
