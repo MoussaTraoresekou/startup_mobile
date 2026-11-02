@@ -514,16 +514,8 @@ class _InvestorProfileScreenState
                     fontSize: 15.sp(context),
                   ),
                 ),
-                SizedBox(height: 6.h(context)),
-                Text(
-                  'Vous pouvez toujours explorer tous les projets, '
-                  'quel que soit leur secteur.',
-                  textAlign: TextAlign.center,
-                  style: context.normalTextStyle.copyWith(
-                    fontSize: 13.sp(context),
-                    color: context.textMuted,
-                  ),
-                ),
+                
+                
               ],
             ),
           );
