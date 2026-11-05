@@ -559,7 +559,6 @@ class _InvestorProfileScreenState
       },
     );
   }
-
   Widget _messageCentral({
     required IconData icon,
     required String message,

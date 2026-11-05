@@ -1,4 +1,3 @@
-
 import 'package:chewie/chewie.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -17,21 +16,16 @@ import 'package:startup_mobile/pages/Investisseur/pith_cover.dart';
 import 'package:startup_mobile/pages/Investisseur/pitch_utils.dart';
 
 import 'package:startup_mobile/pages/pith_thumnail/pitch_video_url_stub.dart'
-    if (dart.library.js_interop)
-        'package:startup_mobile/pages/Investisseur/pitch_video_url_web.dart'
-    if (dart.library.io)
-        'package:startup_mobile/pages/pith_thumnail/pitch_video_url_io.dart'
+    if (dart.library.js_interop) 'package:startup_mobile/pages/Investisseur/pitch_video_url_web.dart'
+    if (dart.library.io) 'package:startup_mobile/pages/pith_thumnail/pitch_video_url_io.dart'
     as video_url;
 
 import 'package:startup_mobile/pages/pith_thumnail/pitch_pdf_open_stub.dart'
-    if (dart.library.io)
-        'package:startup_mobile/pages/pith_thumnail/pitch_pdf_open_io.dart'
+    if (dart.library.io) 'package:startup_mobile/pages/pith_thumnail/pitch_pdf_open_io.dart'
     as pdf_open;
 
-
 import 'package:startup_mobile/pages/pith_thumnail/pitch_pdf_open_stub.dart'
-    if (dart.library.js_interop)
-        'package:startup_mobile/pages/pith_thumnail/pitch_pdf_open_web.dart'
+    if (dart.library.js_interop) 'package:startup_mobile/pages/pith_thumnail/pitch_pdf_open_web.dart'
     as pdf_web;
 
 import 'package:startup_mobile/repository/like/like_repository.dart';
@@ -69,8 +63,7 @@ class _InvestorProjectDetailScreenState
 
   String get _pitchUrl => widget.projet.pithUrl.trim();
 
-  String get _miniatureUrl =>
-      widget.projet.pithThumbnailUrl?.trim() ?? '';
+  String get _miniatureUrl => widget.projet.pithThumbnailUrl?.trim() ?? '';
 
   PitchType get _type => pitchTypeOf(_pitchUrl);
 
@@ -129,7 +122,7 @@ class _InvestorProjectDetailScreenState
       _urlVideoTemporaire = url;
 
       //controller = VideoPlayerController.networkUrl(Uri.parse(url));
-       controller = video_url.creerControleurVideo(url);
+      controller = video_url.creerControleurVideo(url);
       _videoController = controller;
 
       await controller.initialize();
@@ -229,12 +222,8 @@ class _InvestorProjectDetailScreenState
 
       if (kIsWeb) {
         await pdf_web.ouvrirPdfWeb(donnees);
-        
       } else {
-        await pdf_open.ouvrirPdfNatif(
-          donnees,
-          'pitch_${widget.projet.id}.pdf',
-        );
+        await pdf_open.ouvrirPdfNatif(donnees, 'pitch_${widget.projet.id}.pdf');
       }
     } on DioException catch (e) {
       debugPrint('Erreur HTTP lors du téléchargement du PDF : $e');
@@ -316,9 +305,7 @@ class _InvestorProjectDetailScreenState
       if (!mounted) return;
 
       if (!connecte) {
-        _afficherMessage(
-          'Impossible de connecter la messagerie. Réessayez.',
-        );
+        _afficherMessage('Impossible de connecter la messagerie. Réessayez.');
         return;
       }
 
@@ -347,10 +334,8 @@ class _InvestorProjectDetailScreenState
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _AvisSheet(
-        titre: widget.projet.titre,
-        onSubmit: widget.onSubmitAvis,
-      ),
+      builder: (_) =>
+          _AvisSheet(titre: widget.projet.titre, onSubmit: widget.onSubmitAvis),
     );
 
     if (envoye == true && mounted) {
@@ -364,10 +349,7 @@ class _InvestorProjectDetailScreenState
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
-        SnackBar(
-          content: Text(message),
-          behavior: SnackBarBehavior.floating,
-        ),
+        SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
       );
   }
 
@@ -398,9 +380,7 @@ class _InvestorProjectDetailScreenState
         centerTitle: true,
         title: Text(
           'Détail du projet',
-          style: context.titleTextStyle.copyWith(
-            fontSize: 17.sp(context),
-          ),
+          style: context.titleTextStyle.copyWith(fontSize: 17.sp(context)),
         ),
         actions: [
           IconButton(
@@ -495,17 +475,12 @@ class _InvestorProjectDetailScreenState
                       style: OutlinedButton.styleFrom(
                         foregroundColor: context.primary,
                         side: BorderSide(color: context.primary),
-                        padding: EdgeInsets.symmetric(
-                          vertical: 14.h(context),
-                        ),
+                        padding: EdgeInsets.symmetric(vertical: 14.h(context)),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10.w(context)),
                         ),
                       ),
-                      icon: Icon(
-                        Icons.edit_outlined,
-                        size: 18.w(context),
-                      ),
+                      icon: Icon(Icons.edit_outlined, size: 18.w(context)),
                       label: const Text('Donner mon avis'),
                     ),
                   ),
@@ -538,9 +513,7 @@ class _InvestorProjectDetailScreenState
                 child: Text(
                   'Impossible de charger la vidéo.',
                   textAlign: TextAlign.center,
-                  style: context.normalTextStyle.copyWith(
-                    color: Colors.white,
-                  ),
+                  style: context.normalTextStyle.copyWith(color: Colors.white),
                 ),
               ),
             ],
@@ -576,10 +549,7 @@ class _InvestorProjectDetailScreenState
         return Stack(
           fit: StackFit.expand,
           children: [
-            PitchCover(
-              type: PitchType.video,
-              thumbnailUrl: _miniatureUrl,
-            ),
+            PitchCover(type: PitchType.video, thumbnailUrl: _miniatureUrl),
             Positioned.fill(
               child: Material(
                 type: MaterialType.transparency,
@@ -593,16 +563,11 @@ class _InvestorProjectDetailScreenState
         return Stack(
           fit: StackFit.expand,
           children: [
-            PitchCover(
-              type: PitchType.pdf,
-              thumbnailUrl: _miniatureUrl,
-            ),
+            PitchCover(type: PitchType.pdf, thumbnailUrl: _miniatureUrl),
             Positioned.fill(
               child: Material(
                 type: MaterialType.transparency,
-                child: InkWell(
-                  onTap: _pdfEnCours ? null : _ouvrirPdf,
-                ),
+                child: InkWell(onTap: _pdfEnCours ? null : _ouvrirPdf),
               ),
             ),
             Positioned(
@@ -627,10 +592,7 @@ class _InvestorProjectDetailScreenState
                           color: context.textInverse,
                         ),
                       )
-                    : Icon(
-                        Icons.open_in_new_rounded,
-                        size: 18.w(context),
-                      ),
+                    : Icon(Icons.open_in_new_rounded, size: 18.w(context)),
                 label: Text(
                   _pdfEnCours ? 'Chargement...' : 'Ouvrir le PDF',
                   style: const TextStyle(fontWeight: FontWeight.bold),
@@ -680,10 +642,7 @@ class _InvestorProjectDetailScreenState
               color: context.textMuted,
             ),
           ),
-          if (action != null) ...[
-            SizedBox(height: 12.h(context)),
-            action,
-          ],
+          if (action != null) ...[SizedBox(height: 12.h(context)), action],
         ],
       ),
     );
@@ -720,11 +679,7 @@ class _InvestorProjectDetailScreenState
             projet.quotaPropose,
           ),
           Divider(height: 1, color: context.borderColor),
-          _ligneInfo(
-            Icons.favorite_outline,
-            'Nombre de likes',
-            '$nombreLikes',
-          ),
+          _ligneInfo(Icons.favorite_outline, 'Nombre de likes', '$nombreLikes'),
         ],
       ),
     );
@@ -807,10 +762,7 @@ class _InvestorProjectDetailScreenState
 }
 
 class _AvisSheet extends StatefulWidget {
-  const _AvisSheet({
-    required this.titre,
-    required this.onSubmit,
-  });
+  const _AvisSheet({required this.titre, required this.onSubmit});
 
   final String titre;
   final Future<void> Function(String commentaire)? onSubmit;
@@ -964,8 +916,9 @@ class _AvisSheetState extends State<_AvisSheet> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: context.primaryOrange,
                     foregroundColor: Colors.white,
-                    disabledBackgroundColor:
-                        context.primaryOrange.withValues(alpha: 0.6),
+                    disabledBackgroundColor: context.primaryOrange.withValues(
+                      alpha: 0.6,
+                    ),
                     disabledForegroundColor: Colors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
